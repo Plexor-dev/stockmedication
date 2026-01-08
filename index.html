@@ -10,88 +10,156 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
-        :root { font-size: 16px; }
+        :root {
+            font-size: 17px;
+            line-height: 1.5;
+        }
+
         body {
             background-color: #121212;
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             color: #f5f5f5;
-            padding-bottom: 60px;
+            padding-bottom: 70px;
         }
-        .navbar { background: #1f2933; }
+
+        button:focus-visible,
+        a:focus-visible {
+            outline: 3px solid #facc15;
+            outline-offset: 2px;
+        }
+
+        .navbar {
+            background: #1f2933;
+        }
+
         .nav-pills .nav-link {
             background-color: #111827;
             color: #e5e7eb;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
         }
-        .nav-pills .nav-link.active { background-color: #2563eb; }
+
+        .nav-pills .nav-link.active {
+            background-color: #2563eb;
+        }
+
         .card {
             background: #1e1e1e;
             color: #f5f5f5;
             border-radius: 1rem;
-            border-width: 2px;
+            border: 2px solid #374151;
         }
-        .paciente-card { margin-bottom: 1.5rem; border-radius: 1rem; }
-        .planilla-inner-table { font-size: 0.9rem; }
+
+        .paciente-card {
+            margin-bottom: 1.5rem;
+            border-radius: 1rem;
+        }
+
+        .planilla-inner-table {
+            font-size: 0.9rem;
+        }
+
         .planilla-inner-table th,
-        .planilla-inner-table td { border-width: 2px !important; }
-        .table-responsive { font-size: 0.9rem; }
+        .planilla-inner-table td {
+            border-width: 2px !important;
+        }
+
+        .table-responsive {
+            font-size: 0.9rem;
+        }
 
         .stock-wrapper {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
         }
+
         @media (max-width: 768px) {
-            h3 { font-size: 1.1rem; }
-            .navbar-brand { font-size: 0.95rem; }
-            #tabla-stock-table { min-width: 650px; }
+            h3 {
+                font-size: 1.1rem;
+            }
+            .navbar-brand {
+                font-size: 1rem;
+            }
+            #tabla-stock-table {
+                min-width: 650px;
+            }
             #tabla-stock-table th,
-            #tabla-stock-table td { white-space: nowrap; }
+            #tabla-stock-table td {
+                white-space: nowrap;
+            }
         }
 
         .dia-count {
             font-size: 0.95rem;
             padding: 0.25rem 0.75rem;
             border-radius: 0.6rem;
-            color: white;
+            color: #111827;
             display: inline-block;
+            border: 1px solid #0f172a;
+            font-weight: 600;
         }
+
         .modal-content {
             background-color: #1e1e1e;
             color: #f5f5f5;
             border-radius: 1rem;
             border-width: 2px;
         }
+
         .form-control {
             background-color: #111827;
-            border-color: #374151;
+            border-color: #4b5563;
             color: #f9fafb;
             font-size: 0.9rem;
         }
-        .form-control:focus { background-color: #111827; color: #f9fafb; }
+
+        .form-control:focus {
+            background-color: #111827;
+            color: #f9fafb;
+            border-color: #facc15;
+            box-shadow: 0 0 0 0.15rem rgba(250, 204, 21, 0.35);
+        }
+
         .badge-turno {
             border-radius: 999px;
             padding: 0.15rem 0.6rem;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
         }
-        .btn { font-size: 0.9rem; border-radius: 999px; }
-        .btn-group-sm .btn { padding-inline: 0.6rem; }
-        .temp-med-row { background-color: rgba(250, 204, 21, 0.18); }
-        .temp-med-border { border-color: #eab308 !important; }
+
+        .btn {
+            font-size: 0.95rem;
+            border-radius: 999px;
+        }
+
+        .btn-group-sm .btn {
+            padding-inline: 0.6rem;
+        }
+
+        .temp-med-row {
+            background-color: rgba(250, 204, 21, 0.18);
+        }
+
+        .temp-med-border {
+            border-color: #eab308 !important;
+        }
 
         .avatar-circle {
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
             color: #f9fafb;
-            margin-right: 0.5rem;
+            margin-right: 0.75rem;
             flex-shrink: 0;
+            border: 2px solid #4b5563;
         }
 
-        .bottom-nav { display: none; }
+        .bottom-nav {
+            display: none;
+        }
+
         @media (max-width: 768px) {
             .bottom-nav {
                 display: flex;
@@ -99,15 +167,15 @@
                 bottom: 0;
                 left: 0;
                 right: 0;
-                background-color: #111827;
+                background-color: #020617;
                 border-top: 1px solid #374151;
                 z-index: 1030;
             }
             .bottom-nav .nav-link {
                 flex: 1;
                 text-align: center;
-                padding: 0.6rem 0.2rem;
-                font-size: 0.8rem;
+                padding: 0.7rem 0.2rem;
+                font-size: 0.85rem;
                 color: #9ca3af;
                 border-radius: 0;
             }
@@ -116,14 +184,21 @@
                 font-size: 1.1rem;
             }
             .bottom-nav .nav-link.active {
-                color: #ffffff;
-                background-color: #1f2937;
+                color: #f9fafb;
+                background-color: #111827;
             }
         }
 
         @media print {
-            @page { size: A4 portrait; margin: 1cm; }
-            body { background: #ffffff; color: #000000; padding-bottom: 0; }
+            @page {
+                size: A4 portrait;
+                margin: 1cm;
+            }
+            body {
+                background: #ffffff;
+                color: #000000;
+                padding-bottom: 0;
+            }
             .navbar,
             .nav,
             .btn,
@@ -132,23 +207,112 @@
             #modalHistorialStock,
             #modalCarrito,
             #modalAccionesStock,
-            .bottom-nav { display: none !important; }
+            .bottom-nav {
+                display: none !important;
+            }
             .card.paciente-card {
                 break-inside: avoid;
                 box-shadow: none !important;
                 border-color: #000 !important;
             }
-            #tab-stock { display: none !important; }
+            #tab-stock {
+                display: none !important;
+            }
         }
 
         .btn-icon {
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             padding: 0;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             border-radius: 999px;
+        }
+
+        .btn-icon:hover {
+            background-color: #1d4ed8;
+            border-color: #1d4ed8;
+        }
+
+        .btn-icon:active {
+            background-color: #1e40af;
+            border-color: #1e40af;
+        }
+
+        .acciones-stock-btn {
+            border-radius: 0.9rem;
+            border-width: 2px;
+            font-size: 1rem;
+            padding: 0.85rem 1rem;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .acciones-stock-btn span.icono {
+            font-size: 1.2rem;
+        }
+
+        .acciones-stock-btn:hover {
+            filter: brightness(1.08);
+        }
+
+        .acciones-stock-btn.is-active-touch {
+            outline: 3px solid #facc15;
+            outline-offset: 1px;
+        }
+
+        @media (max-width: 768px) {
+            .acciones-stock-btn {
+                font-size: 1.05rem;
+                padding: 1rem 1.1rem;
+            }
+        }
+
+        .btn-accion-editar {
+            background-color: #1d4ed8;
+            border-color: #1d4ed8;
+            color: #f9fafb;
+        }
+
+        .btn-accion-agregar {
+            background-color: #15803d;
+            border-color: #15803d;
+            color: #f9fafb;
+        }
+
+        .btn-accion-descontar {
+            background-color: #b91c1c;
+            border-color: #b91c1c;
+            color: #f9fafb;
+        }
+
+        .btn-accion-historial {
+            background-color: #0f172a;
+            border-color: #4b5563;
+            color: #e5e7eb;
+        }
+
+        .btn-accion-historial:hover {
+            background-color: #111827;
+        }
+
+        /* Botones paciente accesibles */
+        .btn-accion-paciente {
+            font-weight: 500;
+            border-radius: 999px;
+        }
+        .btn-accion-paciente:focus-visible {
+            outline: 3px solid #facc15;
+            outline-offset: 2px;
+        }
+        @media (hover: none) {
+            .btn-accion-paciente:active {
+                transform: scale(0.97);
+                box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.4);
+            }
         }
     </style>
 </head>
@@ -173,9 +337,9 @@
 
     <div class="tab-content">
         <div class="tab-pane fade show active" id="tab-pats">
-            <div class="d-flex justify-content-between mb-3 align-items-center">
+            <div class="d-flex justify-content-between mb-3 align-items-center flex-wrap gap-2">
                 <h3>Pacientes</h3>
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 flex-wrap">
                     <button class="btn btn-primary" onclick="abrirModal()">+ Registrar Paciente</button>
                     <button class="btn btn-outline-light" onclick="imprimirPlanilla()">🖨 Imprimir A4</button>
                 </div>
@@ -184,7 +348,7 @@
         </div>
 
         <div class="tab-pane fade" id="tab-stock">
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                 <h3>Estado de Suministros</h3>
                 <div>
                     <button class="btn btn-warning btn-sm" onclick="abrirCarrito()">🛒 Ver carrito</button>
@@ -231,16 +395,28 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <button class="btn btn-outline-light w-100 mb-2" id="btn-accion-editar">✏️ Editar stock</button>
-        <button class="btn btn-outline-success w-100 mb-2" id="btn-accion-agregar">➕ Agregar stock</button>
-        <button class="btn btn-outline-danger w-100 mb-2" id="btn-accion-descontar">➖ Descontar stock</button>
-        <button class="btn btn-outline-info w-100" id="btn-accion-historial">📜 Ver historial</button>
+        <button class="btn acciones-stock-btn btn-accion-editar w-100 mb-2" id="btn-accion-editar">
+            <span class="icono">✏️</span>
+            <span>Editar stock</span>
+        </button>
+        <button class="btn acciones-stock-btn btn-accion-agregar w-100 mb-2" id="btn-accion-agregar">
+            <span class="icono">➕</span>
+            <span>Agregar stock</span>
+        </button>
+        <button class="btn acciones-stock-btn btn-accion-descontar w-100 mb-2" id="btn-accion-descontar">
+            <span class="icono">➖</span>
+            <span>Descontar stock</span>
+        </button>
+        <button class="btn acciones-stock-btn btn-accion-historial w-100" id="btn-accion-historial">
+            <span class="icono">📜</span>
+            <span>Ver historial</span>
+        </button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Resto de modales (Paciente, Detalle, Historial, Carrito) igual que antes -->
+<!-- MODAL PACIENTE -->
 <div class="modal fade" id="modalPaciente" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -255,8 +431,7 @@
                 <input type="text" id="in-alergias" class="form-control mb-3" placeholder="Alergias (texto libre)">
                 <h6>Prescripciones:</h6>
                 <p class="small text-muted mb-1">
-                    Dosis diaria en mg/mcg (puede ser decimal, ej.: 0.25). Presentación = fuerza del comprimido (75, 100, 150, etc.).
-                    Para medicación temporal (ej.: antibióticos) activar la opción “Temporaria”.
+                    Dosis diaria en mg/mcg (puede ser decimal, ej.: 0.25). Presentación = fuerza del comprimido (75, 100, 150, etc.). Para medicación temporal activar “Temporaria”.
                 </p>
                 <div id="lista-prescripciones"></div>
                 <button class="btn btn-sm btn-outline-secondary mt-2" onclick="nuevaFila()">+ Otra droga</button>
@@ -268,6 +443,7 @@
     </div>
 </div>
 
+<!-- MODAL DETALLE PACIENTE -->
 <div class="modal fade" id="modalDetallePaciente" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -288,6 +464,7 @@
   </div>
 </div>
 
+<!-- MODAL HISTORIAL STOCK -->
 <div class="modal fade" id="modalHistorialStock" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -302,6 +479,7 @@
   </div>
 </div>
 
+<!-- MODAL CARRITO -->
 <div class="modal fade" id="modalCarrito" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -502,10 +680,10 @@ function renderPacientesPlanilla() {
                 '<div class="small text-muted mt-1">Última actualización: ' + lastTxt + '</div>' +
               '</div>' +
             '</div>' +
-            '<div class="d-flex gap-2">' +
-              '<button class="btn btn-outline-light btn-sm" onclick="abrirEdicion(\'' + p.id + '\')">Editar</button>' +
-              '<button class="btn btn-outline-info btn-sm" onclick="verDetallePaciente(\'' + p.id + '\')">Ver detalle</button>' +
-              '<button class="btn btn-outline-danger btn-sm" onclick="eliminarP(\'' + p.id + '\')">Borrar</button>' +
+            '<div class="d-flex gap-2 flex-wrap" role="group" aria-label="Acciones para ' + nombre + '">' +
+              '<button class="btn btn-light btn-sm btn-accion-paciente" type="button" onclick="abrirEdicion(\'' + p.id + '\')" aria-label="Editar datos de ' + nombre + '">✏️ Editar</button>' +
+              '<button class="btn btn-info btn-sm btn-accion-paciente" type="button" onclick="verDetallePaciente(\'' + p.id + '\')" aria-label="Ver detalle de ' + nombre + '">👁 Detalle</button>' +
+              '<button class="btn btn-danger btn-sm btn-accion-paciente" type="button" onclick="eliminarP(\'' + p.id + '\')" aria-label="Borrar registro de ' + nombre + '">🗑 Borrar</button>' +
             '</div>' +
           '</div>' +
           '<div class="table-responsive rounded-4 overflow-hidden">' +
@@ -579,14 +757,12 @@ function renderStock() {
             ? fechaFin.toLocaleDateString('es-AR', { day: '2-digit', month: 'long' })
             : '-';
 
-        let colorStyle = 'background-color: #16a34a; opacity: 0.95;';
+        let colorStyle = 'background-color: #22c55e;';
         if (consumoComp > 0) {
             if (dias <= 5) {
-                const op1 = Math.min(1, 0.6 + (5 - dias) * 0.08);
-                colorStyle = 'background-color: rgba(220, 38, 38, ' + op1 + ');';
+                colorStyle = 'background-color: #ef4444;';
             } else if (dias <= 10) {
-                const op2 = 0.7 + ((10 - dias) * 0.03);
-                colorStyle = 'background-color: rgba(234, 179, 8, ' + op2 + ');';
+                colorStyle = 'background-color: #eab308;';
             }
         }
 
@@ -603,7 +779,7 @@ function renderStock() {
                 '<div class="small text-muted">Hasta: ' + fechaTxt + '</div>' +
             '</td>' +
             '<td>' +
-                '<button class="btn btn-outline-light btn-icon" onclick="abrirAccionesStock(\'' + m.id + '\')">&#8226;&#8226;&#8226;</button>' +
+                '<button class="btn btn-outline-light btn-icon" onclick="abrirAccionesStock(\'' + m.id + '\')" aria-label="Acciones de stock para ' + (m.name || '') + '">•••</button>' +
             '</td>' +
         '</tr>';
     }).join('');
@@ -615,6 +791,12 @@ function inicializarModalAccionesStock() {
     const btnAgregar = document.getElementById('btn-accion-agregar');
     const btnDescontar = document.getElementById('btn-accion-descontar');
     const btnHistorial = document.getElementById('btn-accion-historial');
+
+    [btnEditar, btnAgregar, btnDescontar, btnHistorial].forEach(btn => {
+        btn.addEventListener('touchstart', () => btn.classList.add('is-active-touch'), {passive:true});
+        btn.addEventListener('touchend', () => btn.classList.remove('is-active-touch'));
+        btn.addEventListener('touchcancel', () => btn.classList.remove('is-active-touch'));
+    });
 
     btnEditar.addEventListener('click', function() {
         const id = medAccionesActualId;
@@ -651,7 +833,7 @@ function abrirAccionesStock(id) {
     modal.show();
 }
 
-/* Funciones de stock: editar, agregar, descontar, historial */
+/* Editar / agregar / descontar / historial stock */
 async function editStock(id) {
     const med = listadoMeds.find(x => x.id == id);
     if (!med) return;
@@ -833,14 +1015,240 @@ async function copiarCarrito() {
     }
 }
 
-/* Alta / edición paciente (igual lógica que antes) */
-async function guardarPaciente() { /* ... misma lógica que tu versión previa ... */ }
-function abrirModal() { /* ... */ }
-function abrirEdicion(id) { /* ... */ }
-function nuevaFila(n,d,strength,mgUnit,times,shift,mTabs,aTabs,nTabs,isTemp) { /* ... */ }
-function eliminarFila(btn) { /* ... */ }
-async function eliminarP(id) { /* ... */ }
-function verDetallePaciente(id) { /* ... */ }
+/* Alta / edición paciente */
+function abrirModal() {
+    document.getElementById('modalTitle').innerText = 'Nuevo Registro';
+    document.getElementById('edit-id').value = '';
+    document.getElementById('in-nombre').value = '';
+    document.getElementById('in-dni').value = '';
+    document.getElementById('in-alergias').value = '';
+    document.getElementById('lista-prescripciones').innerHTML = '';
+    nuevaFila();
+    new bootstrap.Modal('#modalPaciente').show();
+}
+
+function abrirEdicion(id) {
+    const p = listadoPats.find(x => x.id == id);
+    if (!p) return;
+    document.getElementById('modalTitle').innerText = 'Editar paciente';
+    document.getElementById('edit-id').value = p.id;
+    document.getElementById('in-nombre').value = p.name || '';
+    document.getElementById('in-dni').value = p.dni || '';
+    document.getElementById('in-alergias').value = p.allergies || '';
+
+    const cont = document.getElementById('lista-prescripciones');
+    cont.innerHTML = '';
+    (p.prescriptions || []).forEach(pr => {
+        nuevaFila(
+            pr.medName || '',
+            pr.dailyDosageMg || pr.dailyDosage || '',
+            pr.strength || '',
+            pr.mgPerUnit || '',
+            pr.timesPerDay || '',
+            pr.shift || '',
+            pr.morningTabs || '',
+            pr.afternoonTabs || '',
+            pr.nightTabs || '',
+            !!pr.isTemporary
+        );
+    });
+    if (!(p.prescriptions || []).length) nuevaFila();
+    new bootstrap.Modal('#modalPaciente').show();
+}
+
+function nuevaFila(
+    n = '', d = '', strength = '', mgUnit = '', times = '', shift = '',
+    mTabs = '', aTabs = '', nTabs = '', isTemp = false
+) {
+    const cont = document.getElementById('lista-prescripciones');
+    const idx = cont.children.length;
+    const fila = document.createElement('div');
+    fila.className = 'border rounded-3 p-2 mb-2';
+    fila.innerHTML = `
+        <div class="row g-2 align-items-end">
+            <div class="col-6">
+                <label class="form-label small">Droga</label>
+                <input type="text" class="form-control in-medName" value="${n}">
+            </div>
+            <div class="col-3">
+                <label class="form-label small">Fuerza</label>
+                <input type="text" class="form-control in-strength" value="${strength}">
+            </div>
+            <div class="col-3">
+                <label class="form-label small">mg por comp.</label>
+                <input type="text" class="form-control in-mgUnit" value="${mgUnit}">
+            </div>
+            <div class="col-4">
+                <label class="form-label small">Dosis diaria (mg)</label>
+                <input type="text" class="form-control in-dosis" value="${d}">
+            </div>
+            <div class="col-2">
+                <label class="form-label small">Mañana</label>
+                <input type="text" class="form-control in-mTabs" value="${mTabs}">
+            </div>
+            <div class="col-2">
+                <label class="form-label small">Tarde</label>
+                <input type="text" class="form-control in-aTabs" value="${aTabs}">
+            </div>
+            <div class="col-2">
+                <label class="form-label small">Noche</label>
+                <input type="text" class="form-control in-nTabs" value="${nTabs}">
+            </div>
+            <div class="col-2">
+                <div class="form-check mt-4">
+                    <input class="form-check-input in-temp" type="checkbox" ${isTemp ? 'checked' : ''} id="temp-${idx}">
+                    <label class="form-check-label small" for="temp-${idx}">
+                        Temporaria
+                    </label>
+                </div>
+            </div>
+            <div class="col-12 text-end">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarFila(this)">Quitar</button>
+            </div>
+        </div>
+    `;
+    cont.appendChild(fila);
+}
+
+function eliminarFila(btn) {
+    const fila = btn.closest('.border');
+    if (fila && fila.parentNode) fila.parentNode.removeChild(fila);
+}
+
+async function guardarPaciente() {
+    const id = document.getElementById('edit-id').value || null;
+    const nombre = document.getElementById('in-nombre').value.trim();
+    const dni = document.getElementById('in-dni').value.trim();
+    const alergias = document.getElementById('in-alergias').value.trim();
+
+    if (!nombre) {
+        alert('El nombre es obligatorio');
+        return;
+    }
+
+    const pres = [];
+    document.querySelectorAll('#lista-prescripciones > div').forEach(div => {
+        const medName = div.querySelector('.in-medName').value.trim();
+        const strength = div.querySelector('.in-strength').value.trim();
+        const mgPerUnit = div.querySelector('.in-mgUnit').value.trim();
+        const dosis = div.querySelector('.in-dosis').value.trim();
+        const mTabs = div.querySelector('.in-mTabs').value.trim();
+        const aTabs = div.querySelector('.in-aTabs').value.trim();
+        const nTabs = div.querySelector('.in-nTabs').value.trim();
+        const isTemp = div.querySelector('.in-temp').checked;
+
+        if (!medName && !dosis) return;
+
+        pres.push({
+            medName,
+            strength,
+            mgPerUnit,
+            dailyDosageMg: parseDecimal(dosis),
+            morningTabs: parseDecimal(mTabs),
+            afternoonTabs: parseDecimal(aTabs),
+            nightTabs: parseDecimal(nTabs),
+            isTemporary: isTemp
+        });
+    });
+
+    const payload = {
+        name: nombre,
+        dni,
+        allergies: alergias,
+        prescriptions: pres,
+        lastUpdated: new Date().toISOString()
+    };
+
+    if (id) {
+        const idx = listadoPats.findIndex(p => p.id == id);
+        if (idx === -1) return;
+        listadoPats[idx] = { ...listadoPats[idx], ...payload };
+        if (!modoOffline) {
+            await fetch(URL_BASE + '/' + RES_PATS + '/' + id, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(listadoPats[idx])
+            });
+        }
+    } else {
+        const nuevo = { ...payload };
+        if (!modoOffline) {
+            const resp = await fetch(URL_BASE + '/' + RES_PATS, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(nuevo)
+            });
+            const creado = await resp.json();
+            nuevo.id = creado.id;
+        } else {
+            nuevo.id = 'local-' + Date.now();
+        }
+        listadoPats.push(nuevo);
+    }
+
+    persistirLocal();
+    renderPacientesPlanilla();
+    renderStock();
+
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalPaciente'));
+    if (modal) modal.hide();
+}
+
+async function eliminarP(id) {
+    if (!confirm('¿Seguro que querés borrar este paciente?')) return;
+    listadoPats = listadoPats.filter(p => p.id != id);
+    if (!modoOffline) {
+        await fetch(URL_BASE + '/' + RES_PATS + '/' + id, { method: 'DELETE' });
+    }
+    persistirLocal();
+    renderPacientesPlanilla();
+    renderStock();
+}
+
+function verDetallePaciente(id) {
+    const p = listadoPats.find(x => x.id == id);
+    if (!p) return;
+    document.getElementById('detalle-title').innerText = 'Detalle del paciente';
+    document.getElementById('detalle-nombre').innerText = p.name || '';
+    document.getElementById('detalle-dni').innerText = p.dni || '';
+    document.getElementById('detalle-alergias').innerText =
+        (p.allergies && p.allergies.trim()) ? p.allergies : 'Sin datos';
+    document.getElementById('detalle-last').innerText =
+        p.lastUpdated ? new Date(p.lastUpdated).toLocaleString('es-AR') : 'Sin registro';
+
+    const cont = document.getElementById('detalle-prescripciones');
+    if (!(p.prescriptions || []).length) {
+        cont.innerHTML = '<p class="small text-muted">Sin prescripciones.</p>';
+    } else {
+        cont.innerHTML = `
+            <div class="table-responsive rounded-4 overflow-hidden">
+                <table class="table table-dark table-sm table-bordered mb-0">
+                    <thead>
+                        <tr>
+                            <th>Medicación</th>
+                            <th>Dosis (mg/día)</th>
+                            <th>Mañana</th>
+                            <th>Tarde</th>
+                            <th>Noche</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${p.prescriptions.map(pr => `
+                            <tr class="${pr.isTemporary ? 'temp-med-row temp-med-border' : ''}">
+                                <td>${pr.medName || ''} ${pr.strength ? '(' + pr.strength + ')' : ''} ${pr.isTemporary ? 'TEMP' : ''}</td>
+                                <td>${pr.dailyDosageMg || pr.dailyDosage || ''}</td>
+                                <td>${parseDecimal(pr.morningTabs)}</td>
+                                <td>${parseDecimal(pr.afternoonTabs)}</td>
+                                <td>${parseDecimal(pr.nightTabs)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    new bootstrap.Modal('#modalDetallePaciente').show();
+}
 
 iniciar();
 </script>
