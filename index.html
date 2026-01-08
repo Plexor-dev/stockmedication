@@ -417,10 +417,18 @@ if ('serviceWorker' in navigator) {
 }
 
 /* Utils */
+/* Utils: Corrección de decimales */
 function parseDecimal(value) {
-    if (value === null || value === undefined) return 0;
+    if (value === null || value === undefined || value === '') return 0;
     if (typeof value === 'number') return value;
-    const s = String(value).trim().replace(',', '.');
+    
+    // 1. Convertir a string y quitar espacios inicio/fin
+    let s = String(value).trim();
+    
+    // 2. Reemplazar TODAS las comas por puntos (Regex global)
+    s = s.replace(/,/g, '.');
+    
+    // 3. Validar que sea número
     const n = parseFloat(s);
     return Number.isNaN(n) ? 0 : n;
 }
@@ -695,19 +703,37 @@ function renderPacientesPlanilla() {
 
 /* Stock */
 function calcularConsumoCompPorMed(m) {
-    return listadoPats.reduce((acc, p) => {
-        return acc + (p.prescriptions || []).reduce((subAcc, pr) => {
+    // Normalizamos nombre y presentación del stock
+    const nombreStock = (m.name || '').trim().toLowerCase();
+    const fuerzaStock = String(m.strength || '').trim().toLowerCase();
+
+    const consumoTotal = listadoPats.reduce((acc, p) => {
+        const sumaPaciente = (p.prescriptions || []).reduce((subAcc, pr) => {
+            // Si es temporaria no descuenta (según tu lógica)
             if (pr.isTemporary) return subAcc;
-            if (
-                (pr.medName || '').toLowerCase() !== (m.name || '').toLowerCase() ||
-                String(pr.strength || '').toLowerCase() !== String(m.strength || '').toLowerCase()
-            ) return subAcc;
-            const totalTabs = parseDecimal(pr.morningTabs) +
-                              parseDecimal(pr.afternoonTabs) +
-                              parseDecimal(pr.nightTabs);
-            return subAcc + totalTabs;
+
+            // Normalizamos nombre y presentación del paciente
+            const nombreP = (pr.medName || '').trim().toLowerCase();
+            const fuerzaP = String(pr.strength || '').trim().toLowerCase();
+
+            // Comparación robusta (sin espacios extra)
+            if (nombreP !== nombreStock || fuerzaP !== fuerzaStock) {
+                return subAcc;
+            }
+
+            // Sumamos las pastillas
+            const mTabs = parseDecimal(pr.morningTabs);
+            const aTabs = parseDecimal(pr.afternoonTabs);
+            const nTabs = parseDecimal(pr.nightTabs);
+            
+            return subAcc + mTabs + aTabs + nTabs;
         }, 0);
+        return acc + sumaPaciente;
     }, 0);
+
+    // TRUCO MATEMÁTICO: Redondeamos a 2 decimales para evitar "0.300000004"
+    // Esto asegura que 0.25 + 0.75 sea 1.00 clavado.
+    return Math.round(consumoTotal * 100) / 100;
 }
 function renderStock() {
     const tabla = document.getElementById('tabla-stock');
@@ -1074,19 +1100,19 @@ function nuevaFila(
             </div>
             <div class="col-3">
                 <label class="form-label small">Dosis (mg/comp.)</label>
-                <input type="text" class="form-control in-dosisComp" value="${dosisComp}">
+                <input type="number" step="any" class="form-control in-dosisComp" value="${dosisComp}">
             </div>
             <div class="col-2">
                 <label class="form-label small">Mañana</label>
-                <input type="text" class="form-control in-mTabs" value="${mTabs}">
+                <input type="number" step="0.01" class="form-control in-mTabs" value="${mTabs}" placeholder="0">
             </div>
             <div class="col-2">
                 <label class="form-label small">Tarde</label>
-                <input type="text" class="form-control in-aTabs" value="${aTabs}">
+                <input type="number" step="0.01" class="form-control in-aTabs" value="${aTabs}" placeholder="0">
             </div>
             <div class="col-2">
                 <label class="form-label small">Noche</label>
-                <input type="text" class="form-control in-nTabs" value="${nTabs}">
+                <input type="number" step="0.01" class="form-control in-nTabs" value="${nTabs}" placeholder="0">
             </div>
             <div class="col-2">
                 <div class="form-check mt-4">
