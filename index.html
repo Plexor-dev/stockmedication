@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Control Stock - Buenos Aires</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Manifest embebido básico -->
+    <link rel="manifest" href='data:application/manifest+json,{"name":"Control Stock Buenos Aires","short_name":"Stock BA","start_url":"./","display":"standalone","background_color":"#111827","theme_color":"#111827"}'>
+
+    <meta name="theme-color" content="#111827">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        :root { font-size: 16px; }
+        body {
+            background-color: #121212;
+            font-family: 'Segoe UI', sans-serif;
+            color: #f5f5f5;
+            padding-bottom: 60px; /* espacio para barra inferior móvil */
+        }
+        .navbar { background: #1f2933; }
+        .nav-pills .nav-link {
+            background-color: #111827;
+            color: #e5e7eb;
+            font-size: 0.9rem;
+        }
+        .nav-pills .nav-link.active { background-color: #2563eb; }
+        .card {
+            background: #1e1e1e;
+            color: #f5f5f5;
+            border-radius: 1rem;
+            border-width: 2px;
+        }
+        .paciente-card { margin-bottom: 1.5rem; border-radius: 1rem; }
+        .planilla-inner-table { font-size: 0.9rem; }
+        .planilla-inner-table th,
+        .planilla-inner-table td { border-width: 2px !important; }
+        .table-responsive { font-size: 0.9rem; }
+
+        .stock-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        @media (max-width: 768px) {
+            h3 { font-size: 1.1rem; }
+            .navbar-brand { font-size: 0.95rem; }
+            #tabla-stock-table { min-width: 650px; }
+            #tabla-stock-table th,
+            #tabla-stock-table td { white-space: nowrap; }
+        }
+
+        .dia-count {
+            font-size: 0.95rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.6rem;
+            color: white;
+            display: inline-block;
+        }
+        .modal-content {
+            background-color: #1e1e1e;
+            color: #f5f5f5;
+            border-radius: 1rem;
+            border-width: 2px;
+        }
+        .form-control {
+            background-color: #111827;
+            border-color: #374151;
+            color: #f9fafb;
+            font-size: 0.9rem;
+        }
+        .form-control:focus { background-color: #111827; color: #f9fafb; }
+        .badge-turno {
+            border-radius: 999px;
+            padding: 0.15rem 0.6rem;
+            font-size: 0.75rem;
+        }
+        .btn { font-size: 0.9rem; border-radius: 999px; }
+        .btn-group-sm .btn { padding-inline: 0.6rem; }
+        .temp-med-row { background-color: rgba(250, 204, 21, 0.18); }
+        .temp-med-border { border-color: #eab308 !important; }
+
+        /* Avatar circular con iniciales */
+        .avatar-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #f9fafb;
+            margin-right: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        /* Barra inferior (tabs mobile) */
+        .bottom-nav { display: none; }
+        @media (max-width: 768px) {
+            .bottom-nav {
+                display: flex;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background-color: #111827;
+                border-top: 1px solid #374151;
+                z-index: 1030;
+            }
+            .bottom-nav .nav-link {
+                flex: 1;
+                text-align: center;
+                padding: 0.6rem 0.2rem;
+                font-size: 0.8rem;
+                color: #9ca3af;
+                border-radius: 0;
+            }
+            .bottom-nav .nav-link span {
+                display: block;
+                font-size: 1.1rem;
+            }
+            .bottom-nav .nav-link.active {
+                color: #ffffff;
+                background-color: #1f2937;
+            }
+        }
+
+        /* Estilos impresión A4 */
+        @media print {
+            @page { size: A4 portrait; margin: 1cm; }
+            body { background: #ffffff; color: #000000; padding-bottom: 0; }
+            .navbar,
+            .nav,
+            .btn,
+            #modalPaciente,
+            #modalDetallePaciente,
+            #modalHistorialStock,
+            #modalCarrito,
+            .bottom-nav { display: none !important; }
+            .card.paciente-card {
+                break-inside: avoid;
+                box-shadow: none !important;
+                border-color: #000 !important;
+            }
+            #tab-stock { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark mb-4 p-3">
+    <div class="container d-flex justify-content-between">
+        <span class="navbar-brand">🏥 Control Stock - Buenos Aires</span>
+        <div id="status-indicator" class="text-white small">Cargando...</div>
+    </div>
+</nav>
+
+<div class="container">
+    <!-- Tabs superiores (desktop) -->
+    <ul class="nav nav-pills mb-4 d-none d-md-flex">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tab-pats" id="tab-btn-pats-top">👥 Pacientes</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-stock" id="tab-btn-stock-top">📦 Stock e Inventario</button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- TAB PACIENTES -->
+        <div class="tab-pane fade show active" id="tab-pats">
+            <div class="d-flex justify-content-between mb-3 align-items-center">
+                <h3>Pacientes</h3>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary" onclick="abrirModal()">+ Registrar Paciente</button>
+                    <button class="btn btn-outline-light" onclick="imprimirPlanilla()">🖨 Imprimir A4</button>
+                </div>
+            </div>
+            <div id="lista-pacientes-planilla"></div>
+        </div>
+
+        <!-- TAB STOCK -->
+        <div class="tab-pane fade" id="tab-stock">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3>Estado de Suministros</h3>
+                <div>
+                    <button class="btn btn-warning btn-sm" onclick="abrirCarrito()">🛒 Ver carrito</button>
+                </div>
+            </div>
+            <div class="card p-3 shadow-sm rounded-4">
+                <div class="table-responsive rounded-4 stock-wrapper">
+                    <table class="table align-middle mt-1 table-dark table-sm table-bordered mb-0" id="tabla-stock-table">
+                        <thead>
+                            <tr>
+                                <th>Droga</th>
+                                <th>Presentación</th>
+                                <th>Stock</th>
+                                <th>Consumo/día</th>
+                                <th>Días / Fecha fin</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-stock"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Barra inferior mobile -->
+<nav class="bottom-nav nav justify-content-around">
+    <button class="nav-link active" id="tab-btn-pats-bottom" onclick="activarTab('tab-pats')">
+        <span>👥</span>
+        Pacientes
+    </button>
+    <button class="nav-link" id="tab-btn-stock-bottom" onclick="activarTab('tab-stock')">
+        <span>📦</span>
+        Stock
+    </button>
+</nav>
+
+<!-- MODAL ALTA / EDICIÓN PACIENTE -->
+<div class="modal fade" id="modalPaciente" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 id="modalTitle">Nuevo Registro</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-id">
+                <input type="text" id="in-nombre" class="form-control mb-2" placeholder="Nombre completo">
+                <input type="text" id="in-dni" class="form-control mb-2" placeholder="DNI">
+                <input type="text" id="in-alergias" class="form-control mb-3" placeholder="Alergias (texto libre)">
+                <h6>Prescripciones:</h6>
+                <p class="small text-muted mb-1">
+                    Dosis diaria en mg/mcg (puede ser decimal, ej.: 0.25). Presentación = fuerza del comprimido (75, 100, 150, etc.).
+                    Para medicación temporal (ej.: antibióticos) activar la opción “Temporaria”.
+                </p>
+                <div id="lista-prescripciones"></div>
+                <button class="btn btn-sm btn-outline-secondary mt-2" onclick="nuevaFila()">+ Otra droga</button>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary w-100" onclick="guardarPaciente()">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DETALLE PACIENTE -->
+<div class="modal fade" id="modalDetallePaciente" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-secondary text-white">
+        <h5 id="detalle-title">Detalle del paciente</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Nombre:</strong> <span id="detalle-nombre"></span></p>
+        <p><strong>DNI:</strong> <span id="detalle-dni"></span></p>
+        <p><strong>Alergias:</strong> <span id="detalle-alergias"></span></p>
+        <p><strong>Última actualización:</strong> <span id="detalle-last"></span></p>
+        <hr>
+        <h6>Esquema de medicación</h6>
+        <div id="detalle-prescripciones"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL HISTORIAL STOCK -->
+<div class="modal fade" id="modalHistorialStock" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-secondary text-white">
+        <h5 id="historial-title">Historial de stock</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="historial-contenido"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CARRITO -->
+<div class="modal fade" id="modalCarrito" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5>🛒 Carrito de reposición</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="small mb-2">
+          Medicamentos con menos de 5 días de cobertura. Se sugiere reponer hasta 10 días (cantidad calculada).
+        </p>
+        <ul id="carrito-lista" class="small mb-3"></ul>
+        <button class="btn btn-dark w-100 mb-1" onclick="copiarCarrito()">Copiar faltantes</button>
+        <div id="carrito-msg" class="small text-success mt-1"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+const URL_BASE = 'https://695f043a7f037703a81290ad.mockapi.io/api/v1';
+const RES_MEDS = 'Medications';
+const RES_PATS = 'Patients';
+
+let listadoMeds = [];
+let listadoPats = [];
+let modoOffline = true;
+
+const DEFAULT_MG_PER_UNIT = 100;
+const DIAS_MINIMOS = 5;
+const DIAS_OBJETIVO = 10;
+
+/* -------- Service Worker básico para offline -------- */
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        const swCode = `
+            const CACHE_NAME = 'stock-ba-v1';
+            const OFFLINE_URLS = ['./'];
+
+            self.addEventListener('install', event => {
+                event.waitUntil(
+                    caches.open(CACHE_NAME).then(cache => cache.addAll(OFFLINE_URLS))
+                );
+                self.skipWaiting();
+            });
+
+            self.addEventListener('activate', event => {
+                event.waitUntil(
+                    caches.keys().then(keys =>
+                        Promise.all(
+                            keys.map(k => k !== CACHE_NAME && caches.delete(k))
+                        )
+                    )
+                );
+                self.clients.claim();
+            });
+
+            self.addEventListener('fetch', event => {
+                event.respondWith(
+                    caches.match(event.request).then(response => {
+                        return response || fetch(event.request).then(netRes => {
+                            const resClone = netRes.clone();
+                            caches.open(CACHE_NAME).then(cache => {
+                                cache.put(event.request, resClone);
+                            });
+                            return netRes;
+                        }).catch(() => response);
+                    })
+                );
+            });
+        `;
+        const blob = new Blob([swCode], { type: 'text/javascript' });
+        const swUrl = URL.createObjectURL(blob);
+        navigator.serviceWorker.register(swUrl).catch(console.error);
+    });
+}
+
+/* -------- Utilidades -------- */
+
+function parseDecimal(value) {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'number') return value;
+    const s = String(value).trim().replace(',', '.');
+    const n = parseFloat(s);
+    return Number.isNaN(n) ? 0 : n;
+}
+
+function getInitials(name) {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    const first = parts[0].charAt(0).toUpperCase();
+    const last = parts[parts.length - 1].charAt(0).toUpperCase();
+    return first + last;
+}
+
+function getAvatarColor(name) {
+    const colors = ['#ef4444','#f97316','#eab308','#22c55e','#0ea5e9','#6366f1','#a855f7','#ec4899'];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+}
+
+/* -------- Tabs bottom (mobile) sincronizados -------- */
+
+function activarTab(id) {
+    const selector = '[data-bs-toggle="pill"][data-bs-target="#' + id + '"]';
+    const tabElement = document.querySelector(selector);
+    if (tabElement) {
+        const tab = new bootstrap.Tab(tabElement);
+        tab.show();
+    }
+
+    const btnPatsBottom = document.getElementById('tab-btn-pats-bottom');
+    const btnStockBottom = document.getElementById('tab-btn-stock-bottom');
+    btnPatsBottom.classList.remove('active');
+    btnStockBottom.classList.remove('active');
+    if (id === 'tab-pats') btnPatsBottom.classList.add('active');
+    if (id === 'tab-stock') btnStockBottom.classList.add('active');
+}
+
+document.addEventListener('shown.bs.tab', function (event) {
+    const targetId = event.target.getAttribute('data-bs-target');
+    if (targetId === '#tab-pats') {
+        activarTab('tab-pats');
+    } else if (targetId === '#tab-stock') {
+        activarTab('tab-stock');
+    }
+});
+
+/* -------- Carga inicial -------- */
+
+async function iniciar() {
+    try {
+        const [rM, rP] = await Promise.all([
+            fetch(URL_BASE + '/' + RES_MEDS),
+            fetch(URL_BASE + '/' + RES_PATS)
+        ]);
+        if (rM.ok && rP.ok) {
+            listadoMeds = await rM.json();
+            listadoPats = await rP.json();
+            modoOffline = false;
+            document.getElementById('status-indicator').innerText = "Modo Online (API)";
+        } else {
+            usarCargaLocal();
+        }
+    } catch (e) {
+        usarCargaLocal();
+    }
+    renderizar();
+}
+
+function usarCargaLocal() {
+    listadoMeds = JSON.parse(localStorage.getItem('local_meds')) || [];
+    listadoPats = JSON.parse(localStorage.getItem('local_pats')) || [];
+    document.getElementById('status-indicator').innerText = "Modo Local (Seguro)";
+}
+
+function persistirLocal() {
+    localStorage.setItem('local_meds', JSON.stringify(listadoMeds));
+    localStorage.setItem('local_pats', JSON.stringify(listadoPats));
+}
+
+function renderizar() {
+    renderPacientesPlanilla();
+    renderStock();
+}
+
+function imprimirPlanilla() {
+    window.print();
+}
+
+/* -------- PACIENTES: PLANILLA EN CARDS ---------- */
+
+function renderPacientesPlanilla() {
+    const cont = document.getElementById('lista-pacientes-planilla');
+    cont.innerHTML = listadoPats.map(p => {
+        const lastTxt = p.lastUpdated
+            ? new Date(p.lastUpdated).toLocaleString('es-AR')
+            : 'Sin registro';
+
+        const nombre = p.name || '';
+        const initials = getInitials(nombre);
+        const avatarColor = getAvatarColor(nombre);
+
+        const alergiasTxt = (p.allergies || '').trim();
+        const alergiasMostrar = alergiasTxt ? '⚠️ ' + alergiasTxt : 'Sin datos';
+
+        return '' +
+        '<div class="card paciente-card shadow-sm p-3 p-md-4 border-2">' +
+          '<div class="d-flex justify-content-between flex-wrap gap-2 mb-2">' +
+            '<div class="d-flex align-items-start">' +
+              '<div class="avatar-circle" style="background-color:' + avatarColor + ';">' +
+                initials +
+              '</div>' +
+              '<div>' +
+                '<div class="fw-semibold" style="font-size:1rem;">' + nombre + '</div>' +
+                '<div class="small text-muted">DNI: ' + (p.dni || '') + '</div>' +
+                '<div class="small text-muted">Alergias: ' + alergiasMostrar + '</div>' +
+                '<div class="small text-muted mt-1">Última actualización: ' + lastTxt + '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="d-flex gap-2">' +
+              '<button class="btn btn-outline-light btn-sm" onclick="abrirEdicion(\'' + p.id + '\')">Editar</button>' +
+              '<button class="btn btn-outline-info btn-sm" onclick="verDetallePaciente(\'' + p.id + '\')">Ver detalle</button>' +
+              '<button class="btn btn-outline-danger btn-sm" onclick="eliminarP(\'' + p.id + '\')">Borrar</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="table-responsive rounded-4 overflow-hidden">' +
+            '<table class="table table-dark table-sm table-bordered mb-0 planilla-inner-table">' +
+              '<thead>' +
+                '<tr>' +
+                  '<th>Medicación</th>' +
+                  '<th>Dosis (mg/día)</th>' +
+                  '<th>Mañana (comp.)</th>' +
+                  '<th>Tarde (comp.)</th>' +
+                  '<th>Noche (comp.)</th>' +
+                  '<th>Total día (comp.)</th>' +
+                '</tr>' +
+              '</thead>' +
+              '<tbody>' +
+                ((p.prescriptions || []).length
+                  ? (p.prescriptions || []).map(function(pr) {
+                        const dosis = pr.dailyDosageMg || pr.dailyDosage || '';
+                        const mTabs = parseDecimal(pr.morningTabs);
+                        const aTabs = parseDecimal(pr.afternoonTabs);
+                        const nTabs = parseDecimal(pr.nightTabs);
+                        const totalTabs = mTabs + aTabs + nTabs;
+                        const tempClass = pr.isTemporary ? 'temp-med-row temp-med-border' : '';
+                        const labelTemp = pr.isTemporary ? ' (TEMP)' : '';
+                        return '' +
+                        '<tr class="' + tempClass + '">' +
+                          '<td>' + (pr.medName || '') + (pr.strength ? ' (' + pr.strength + ')' : '') + labelTemp + '</td>' +
+                          '<td>' + dosis + '</td>' +
+                          '<td>' + mTabs + '</td>' +
+                          '<td>' + aTabs + '</td>' +
+                          '<td>' + nTabs + '</td>' +
+                          '<td>' + totalTabs + '</td>' +
+                        '</tr>';
+                    }).join('')
+                  : '<tr><td colspan="6" class="small text-muted text-center">Sin prescripciones</td></tr>'
+                ) +
+              '</tbody>' +
+            '</table>' +
+          '</div>' +
+        '</div>';
+    }).join('');
+}
+
+function verDetallePaciente(id) {
+    const p = listadoPats.find(function(x){ return x.id == id; });
+    if (!p) return;
+
+    document.getElementById('detalle-title').innerText = 'Detalle de ' + (p.name || '');
+    document.getElementById('detalle-nombre').innerText = p.name || '';
+    document.getElementById('detalle-dni').innerText = p.dni || '';
+
+    const alergiasTxt = (p.allergies || '').trim();
+    document.getElementById('detalle-alergias').innerText = alergiasTxt ? '⚠️ ' + alergiasTxt : 'Sin datos';
+
+    document.getElementById('detalle-last').innerText = p.lastUpdated
+        ? new Date(p.lastUpdated).toLocaleString('es-AR')
+        : 'Sin registro';
+
+    const cont = document.getElementById('detalle-prescripciones');
+    const pres = p.prescriptions || [];
+
+    if (!pres.length) {
+        cont.innerHTML = '<p class="text-muted small">Sin prescripciones cargadas.</p>' +
+                         '<hr><h6 class="mt-3">Historial</h6>' +
+                         '<ul class="small">' +
+                         ((p.history || []).slice().reverse().map(function(h){
+                            return '<li>' + new Date(h.date).toLocaleString('es-AR') + ' – ' + h.action + ': ' + h.detail + '</li>';
+                         }).join('') || '<li class="text-muted">Sin historial.</li>') +
+                         '</ul>';
+        new bootstrap.Modal('#modalDetallePaciente').show();
+        return;
+    }
+
+    const cuerpo = pres.map(function(pr){
+        const dosis = pr.dailyDosageMg || pr.dailyDosage || '';
+        const times = Array.isArray(pr.times) ? pr.times.join(', ') : (pr.times || '');
+        const shift = pr.shift || '';
+        const mgPerUnit = parseDecimal(pr.mgPerUnit) || DEFAULT_MG_PER_UNIT;
+        const strengthTxt = pr.strength ? String(pr.strength) : String(mgPerUnit);
+        const mTabs = parseDecimal(pr.morningTabs);
+        const aTabs = parseDecimal(pr.afternoonTabs);
+        const nTabs = parseDecimal(pr.nightTabs);
+        const totalTabs = mTabs + aTabs + nTabs;
+        const tempLabel = pr.isTemporary ? '<span class="badge bg-warning text-dark ms-2">Temporal</span>' : '';
+
+        return '' +
+        '<div class="border rounded-3 p-2 mb-2 ' + (pr.isTemporary ? 'temp-med-border temp-med-row' : '') + '">' +
+          '<div class="d-flex justify-content-between">' +
+            '<div>' +
+              '<strong>' + (pr.medName || '') + ' (' + strengthTxt + ')</strong>' +
+              tempLabel +
+              '<div class="small text-muted">' +
+                dosis + ' /día · ' + mgPerUnit + ' por comprimido' +
+              '</div>' +
+              '<div class="small text-muted">' +
+                'Mañ: ' + mTabs + ' · Tar: ' + aTabs + ' · Noc: ' + nTabs + ' · Total: ' + totalTabs +
+              '</div>' +
+            '</div>' +
+            '<div>' +
+              (shift ? '<span class="badge bg-info badge-turno">' + shift + '</span>' : '') +
+            '</div>' +
+          '</div>' +
+          '<div class="small text-muted mt-1">' +
+            'Horarios: ' + (times || 'Sin horarios definidos') +
+          '</div>' +
+        '</div>';
+    }).join('');
+
+    const histHtml = (p.history || []).slice().reverse().map(function(h){
+        return '<li>' + new Date(h.date).toLocaleString('es-AR') + ' – ' + h.action + ': ' + h.detail + '</li>';
+    }).join('') || '<li class="text-muted">Sin historial.</li>';
+
+    cont.innerHTML = cuerpo +
+        '<hr><h6 class="mt-3">Historial</h6>' +
+        '<ul class="small">' + histHtml + '</ul>';
+
+    new bootstrap.Modal('#modalDetallePaciente').show();
+}
+
+/* -------- STOCK E INVENTARIO + CARRITO ---------- */
+
+function calcularConsumoCompPorMed(m) {
+    return listadoPats.reduce(function(acc, p) {
+        return acc + (p.prescriptions || []).reduce(function(subAcc, pr) {
+            if (pr.isTemporary) return subAcc;
+            if (
+                (pr.medName || '').toLowerCase() !== (m.name || '').toLowerCase() ||
+                parseDecimal(pr.strength) !== parseDecimal(m.strength)
+            ) return subAcc;
+
+            const mgPerUnit = parseDecimal(pr.mgPerUnit) || parseDecimal(m.mgPerUnit) || DEFAULT_MG_PER_UNIT;
+            const dosisDia = parseDecimal(pr.dailyDosageMg || pr.dailyDosage);
+            const compDia = mgPerUnit > 0 ? dosisDia / mgPerUnit : 0;
+
+            return subAcc + compDia;
+        }, 0);
+    }, 0);
+}
+
+function renderStock() {
+    const tabla = document.getElementById('tabla-stock');
+    tabla.innerHTML = listadoMeds.map(function(m){
+        const consumoComp = calcularConsumoCompPorMed(m);
+        const stockNum = parseDecimal(m.stock);
+        const dias = consumoComp > 0 ? Math.floor(stockNum / consumoComp) : 0;
+
+        const hoy = new Date();
+        const fechaFin = new Date(hoy);
+        fechaFin.setDate(hoy.getDate() + dias);
+        const fechaTxt = consumoComp > 0
+            ? fechaFin.toLocaleDateString('es-AR', { day: '2-digit', month: 'long' })
+            : '-';
+
+        let colorStyle = 'background-color: #16a34a; opacity: 0.95;';
+        if (consumoComp > 0) {
+            if (dias <= 5) {
+                const op1 = Math.min(1, 0.6 + (5 - dias) * 0.08);
+                colorStyle = 'background-color: rgba(220, 38, 38, ' + op1 + ');';
+            } else if (dias <= 10) {
+                const op2 = 0.7 + ((10 - dias) * 0.03);
+                colorStyle = 'background-color: rgba(234, 179, 8, ' + op2 + ');';
+            }
+        }
+
+        const strengthTxt = m.strength ? String(m.strength) : (m.mgPerUnit || '');
+        const stockHistory = m.stockHistory || [];
+
+        return '' +
+        '<tr>' +
+            '<td><strong>' + (m.name || '') + '</strong></td>' +
+            '<td>' + strengthTxt + '</td>' +
+            '<td>' + stockNum + '</td>' +
+            '<td>' + consumoComp.toFixed(2) + '</td>' +
+            '<td>' +
+                '<div class="dia-count" style="' + colorStyle + '">' + dias + ' días</div>' +
+                '<div class="small text-muted">Hasta: ' + fechaTxt + '</div>' +
+            '</td>' +
+            '<td>' +
+                '<div class="d-flex flex-wrap gap-2">' +
+                    '<button class="btn btn-outline-light btn-sm px-3 py-1" onclick="editStock(\'' + m.id + '\')">✏️ Editar</button>' +
+                    '<button class="btn btn-outline-success btn-sm px-3 py-1" onclick="addStock(\'' + m.id + '\')">+ Agregar</button>' +
+                    '<button class="btn btn-outline-danger btn-sm px-3 py-1" onclick="subStock(\'' + m.id + '\')">− Descontar</button>' +
+                '</div>' +
+                '<button class="btn btn-link btn-sm text-info mt-2 p-0" onclick="verHistorialStock(\'' + m.id + '\')">' +
+                    'Historial (' + stockHistory.length + ')' +
+                '</button>' +
+            '</td>' +
+        '</tr>';
+    }).join('');
+}
+
+async function editStock(id) {
+    const med = listadoMeds.find(function(x){ return x.id == id; });
+    if (!med) return;
+    const actual = parseDecimal(med.stock);
+    const val = prompt('Nuevo stock total (comprimidos):', actual);
+    if (val === null) return;
+
+    const nuevoStock = parseDecimal(val);
+    if (Number.isNaN(nuevoStock) || nuevoStock < 0) return;
+
+    const cambio = nuevoStock - actual;
+    med.stock = nuevoStock;
+
+    med.stockHistory = med.stockHistory || [];
+    med.stockHistory.push({
+        date: new Date().toISOString(),
+        change: cambio,
+        newStock: nuevoStock,
+        type: 'set'
+    });
+
+    if (!modoOffline) {
+        await fetch(URL_BASE + '/' + RES_MEDS + '/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ stock: nuevoStock, stockHistory: med.stockHistory })
+        });
+    }
+    persistirLocal();
+    renderStock();
+}
+
+async function addStock(id) {
+    const med = listadoMeds.find(function(x){ return x.id == id; });
+    if (!med) return;
+    const actual = parseDecimal(med.stock);
+    const val = prompt('Cantidad a agregar (comprimidos):', '');
+    if (val === null || val.trim() === '') return;
+
+    const delta = parseDecimal(val);
+    if (Number.isNaN(delta)) return;
+
+    const nuevoStock = actual + delta;
+    med.stock = nuevoStock;
+
+    med.stockHistory = med.stockHistory || [];
+    med.stockHistory.push({
+        date: new Date().toISOString(),
+        change: delta,
+        newStock: nuevoStock,
+        type: 'add'
+    });
+
+    if (!modoOffline) {
+        await fetch(URL_BASE + '/' + RES_MEDS + '/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ stock: nuevoStock, stockHistory: med.stockHistory })
+        });
+    }
+    persistirLocal();
+    renderStock();
+}
+
+async function subStock(id) {
+    const med = listadoMeds.find(function(x){ return x.id == id; });
+    if (!med) return;
+
+    const actual = parseDecimal(med.stock);
+    const val = prompt('Cantidad a descontar (comprimidos):', '');
+    if (val === null || val.trim() === '') return;
+
+    const delta = parseDecimal(val);
+    if (Number.isNaN(delta) || delta < 0) return;
+
+    const nuevoStock = Math.max(0, actual - delta);
+    const cambio = nuevoStock - actual;
+    med.stock = nuevoStock;
+
+    med.stockHistory = med.stockHistory || [];
+    med.stockHistory.push({
+        date: new Date().toISOString(),
+        change: cambio,
+        newStock: nuevoStock,
+        type: 'sub'
+    });
+
+    if (!modoOffline) {
+        await fetch(URL_BASE + '/' + RES_MEDS + '/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ stock: nuevoStock, stockHistory: med.stockHistory })
+        });
+    }
+
+    persistirLocal();
+    renderStock();
+}
+
+function verHistorialStock(id) {
+    const med = listadoMeds.find(function(x){ return x.id == id; });
+    if (!med) return;
+    const hist = med.stockHistory || [];
+
+    document.getElementById('historial-title').innerText =
+        'Historial de ' + (med.name || '') + ' (' + (med.strength || med.mgPerUnit || '') + ')';
+
+    const cont = document.getElementById('historial-contenido');
+    if (!hist.length) {
+        cont.innerHTML = '<p class="small text-muted">Sin movimientos registrados.</p>';
+    } else {
+        cont.innerHTML =
+            '<div class="table-responsive rounded-4 overflow-hidden">' +
+              '<table class="table table-sm table-dark table-bordered align-middle mb-0">' +
+                '<thead>' +
+                  '<tr>' +
+                    '<th>Fecha</th>' +
+                    '<th>Tipo</th>' +
+                    '<th>Cambio</th>' +
+                    '<th>Stock resultante</th>' +
+                  '</tr>' +
+                '</thead>' +
+                '<tbody>' +
+                  hist.slice().reverse().map(function(h){
+                    var tipo = 'Seteo';
+                    if (h.type === 'add') tipo = 'Reposición';
+                    else if (h.type === 'sub') tipo = 'Descuento';
+                    return '' +
+                      '<tr>' +
+                        '<td>' + new Date(h.date).toLocaleString('es-AR') + '</td>' +
+                        '<td>' + tipo + '</td>' +
+                        '<td>' + (h.change > 0 ? '+' + h.change : h.change) + '</td>' +
+                        '<td>' + h.newStock + '</td>' +
+                      '</tr>';
+                  }).join('') +
+                '</tbody>' +
+              '</table>' +
+            '</div>';
+    }
+
+    new bootstrap.Modal('#modalHistorialStock').show();
+}
+
+/* -------- CARRITO ---------- */
+
+function obtenerItemsCarrito() {
+    const items = [];
+    listadoMeds.forEach(function(m){
+        const consumo = calcularConsumoCompPorMed(m);
+        if (consumo <= 0) return;
+        const stock = parseDecimal(m.stock);
+        const dias = stock / consumo;
+        if (dias < DIAS_MINIMOS) {
+            const falta = Math.max(0, Math.ceil(DIAS_OBJETIVO * consumo - stock));
+            items.push({
+                nombre: m.name,
+                strength: m.strength || m.mgPerUnit || '',
+                falta: falta
+            });
+        }
+    });
+    return items;
+}
+
+function abrirCarrito() {
+    const lista = document.getElementById('carrito-lista');
+    const items = obtenerItemsCarrito();
+
+    if (!items.length) {
+        lista.innerHTML = '<li class="text-muted">No hay medicamentos por debajo de 5 días.</li>';
+    } else {
+        lista.innerHTML = items.map(function(it){
+            return '<li>' + it.nombre + (it.strength ? ' ' + it.strength : '') +
+                   ' (' + it.falta + ')</li>';
+        }).join('');
+    }
+    document.getElementById('carrito-msg').innerText = '';
+    new bootstrap.Modal('#modalCarrito').show();
+}
+
+async function copiarCarrito() {
+    const items = obtenerItemsCarrito();
+    if (!items.length) {
+        document.getElementById('carrito-msg').innerText = 'No hay nada para copiar.';
+        return;
+    }
+    const texto = items.map(function(it){
+        return it.nombre + (it.strength ? ' ' + it.strength : '') + ' (' + it.falta + ')';
+    }).join(', ');
+    try {
+        if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(texto);
+            document.getElementById('carrito-msg').innerText = 'Copiado al portapapeles.';
+        } else {
+            document.getElementById('carrito-msg').innerText = 'Clipboard no disponible en este navegador.';
+        }
+    } catch (e) {
+        document.getElementById('carrito-msg').innerText = 'No se pudo copiar.';
+    }
+}
+
+/* -------- ALTA / EDICIÓN PACIENTE ---------- */
+
+async function guardarPaciente() {
+    const id = document.getElementById('edit-id').value;
+    const name = document.getElementById('in-nombre').value.trim();
+    const dni = document.getElementById('in-dni').value.trim();
+    const allergies = document.getElementById('in-alergias').value.trim();
+    const rows = document.querySelectorAll('.item-presc');
+    const prescriptions = [];
+
+    rows.forEach(function(r){
+        const medName = r.querySelector('.med-nombre').value.trim();
+        const dailyDosageStr = r.querySelector('.med-dosis').value;
+        const strengthStr = r.querySelector('.med-strength').value;
+        const mgPerUnitStr = r.querySelector('.med-mgunit').value;
+        const timesStr = r.querySelector('.med-times').value.trim();
+        const shift = r.querySelector('.med-shift').value.trim();
+        const mTabsStr = r.querySelector('.med-morning').value;
+        const aTabsStr = r.querySelector('.med-afternoon').value;
+        const nTabsStr = r.querySelector('.med-night').value;
+        const isTemp = r.querySelector('.med-temp').checked;
+
+        if (medName && dailyDosageStr) {
+            const dailyDosageMg = parseDecimal(dailyDosageStr);
+            const strength = parseDecimal(strengthStr);
+            const mgPerUnit = parseDecimal(mgPerUnitStr) || strength || DEFAULT_MG_PER_UNIT;
+            const times = timesStr ? timesStr.split(',').map(function(t){ return t.trim(); }).filter(Boolean) : [];
+            const morningTabs = parseDecimal(mTabsStr);
+            const afternoonTabs = parseDecimal(aTabsStr);
+            const nightTabs = parseDecimal(nTabsStr);
+
+            prescriptions.push({
+                medName: medName,
+                strength: strength,
+                dailyDosageMg: dailyDosageMg,
+                mgPerUnit: mgPerUnit,
+                times: times,
+                shift: shift,
+                morningTabs: morningTabs,
+                afternoonTabs: afternoonTabs,
+                nightTabs: nightTabs,
+                isTemporary: isTemp
+            });
+
+            if (!isTemp) {
+                const existe = listadoMeds.find(function(m){
+                    return (m.name || '').toLowerCase() === medName.toLowerCase() &&
+                           parseDecimal(m.strength) === strength;
+                });
+                if (!existe) {
+                    const nuevaDroga = {
+                        name: medName,
+                        strength: strength,
+                        stock: 0,
+                        mgPerUnit: mgPerUnit,
+                        stockHistory: []
+                    };
+                    if (!modoOffline) {
+                        fetch(URL_BASE + '/' + RES_MEDS, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(nuevaDroga)
+                        }).catch(function(){});
+                    }
+                    listadoMeds.push(nuevaDroga);
+                }
+            }
+        }
+    });
+
+    const nowIso = new Date().toISOString();
+    const prev = listadoPats.find(function(p){ return p.id == id; }) || {};
+    const history = prev.history || [];
+    history.push({
+        date: nowIso,
+        action: id ? 'update' : 'create',
+        detail: 'Edición de datos y prescripciones'
+    });
+
+    const data = {
+        name: name,
+        dni: dni,
+        allergies: allergies,
+        prescriptions: prescriptions,
+        lastUpdated: nowIso,
+        history: history
+    };
+
+    if (id) {
+        if (!modoOffline) {
+            await fetch(URL_BASE + '/' + RES_PATS + '/' + id, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        }
+        const idx = listadoPats.findIndex(function(p){ return p.id == id; });
+        listadoPats[idx] = Object.assign({}, data, { id: id });
+    } else {
+        if (!modoOffline) {
+            const res = await fetch(URL_BASE + '/' + RES_PATS, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const nuevo = await res.json();
+            listadoPats.push(nuevo);
+        } else {
+            listadoPats.push(Object.assign({}, data, { id: Date.now().toString() }));
+        }
+    }
+
+    persistirLocal();
+    renderizar();
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalPaciente'));
+    if (modal) modal.hide();
+}
+
+function abrirModal() {
+    document.getElementById('edit-id').value = '';
+    document.getElementById('modalTitle').innerText = 'Nuevo Paciente';
+    document.getElementById('in-nombre').value = '';
+    document.getElementById('in-dni').value = '';
+    document.getElementById('in-alergias').value = '';
+    document.getElementById('lista-prescripciones').innerHTML = '';
+    nuevaFila();
+    new bootstrap.Modal('#modalPaciente').show();
+}
+
+function abrirEdicion(id) {
+    const p = listadoPats.find(function(x){ return x.id == id; });
+    if (!p) return;
+    document.getElementById('edit-id').value = id;
+    document.getElementById('modalTitle').innerText = 'Editar Paciente';
+    document.getElementById('in-nombre').value = p.name || '';
+    document.getElementById('in-dni').value = p.dni || '';
+    document.getElementById('in-alergias').value = p.allergies || '';
+    document.getElementById('lista-prescripciones').innerHTML = '';
+    (p.prescriptions || []).forEach(function(pr){
+        nuevaFila(
+            pr.medName,
+            pr.dailyDosageMg || pr.dailyDosage || '',
+            pr.strength || '',
+            pr.mgPerUnit || '',
+            Array.isArray(pr.times) ? pr.times.join(', ') : (pr.times || ''),
+            pr.shift || '',
+            pr.morningTabs || '',
+            pr.afternoonTabs || '',
+            pr.nightTabs || '',
+            !!pr.isTemporary
+        );
+    });
+    new bootstrap.Modal('#modalPaciente').show();
+}
+
+function nuevaFila(
+    n,
+    d,
+    strength,
+    mgUnit,
+    times,
+    shift,
+    mTabs,
+    aTabs,
+    nTabs,
+    isTemp
+) {
+    n = n || '';
+    d = d || '';
+    strength = strength || '';
+    mgUnit = mgUnit || '';
+    times = times || '';
+    shift = shift || '';
+    mTabs = mTabs || '';
+    aTabs = aTabs || '';
+    nTabs = nTabs || '';
+    isTemp = !!isTemp;
+
+    const div = document.createElement('div');
+    div.className = 'row g-2 mb-3 item-presc';
+    div.innerHTML =
+        '<div class="col-6">' +
+            '<input type="text" class="form-control med-nombre" value="' + n + '" placeholder="Droga">' +
+        '</div>' +
+        '<div class="col-6">' +
+            '<input type="text" class="form-control med-dosis" value="' + d + '" placeholder="Dosis/día (mg o comp.)">' +
+        '</div>' +
+        '<div class="col-4 mt-2">' +
+            '<input type="text" class="form-control med-strength" value="' + strength + '" placeholder="Presentación (75,100,150)">' +
+        '</div>' +
+        '<div class="col-4 mt-2">' +
+            '<input type="text" class="form-control med-mgunit" value="' + mgUnit + '" placeholder="mg/comp. (opcional)">' +
+        '</div>' +
+        '<div class="col-4 mt-2">' +
+            '<input type="text" class="form-control med-shift" value="' + shift + '" placeholder="Turno (mañana/noche)">' +
+        '</div>' +
+        '<div class="col-12 mt-2">' +
+            '<input type="text" class="form-control med-times" value="' + times + '" placeholder="Horarios (8:00, 20:00)">' +
+        '</div>' +
+        '<div class="col-4 mt-2">' +
+            '<input type="text" class="form-control med-morning" value="' + mTabs + '" placeholder="Mañana comp.">' +
+        '</div>' +
+        '<div class="col-4 mt-2">' +
+            '<input type="text" class="form-control med-afternoon" value="' + aTabs + '" placeholder="Tarde comp.">' +
+        '</div>' +
+        '<div class="col-4 mt-2">' +
+            '<input type="text" class="form-control med-night" value="' + nTabs + '" placeholder="Noche comp.">' +
+        '</div>' +
+        '<div class="col-12 mt-2 d-flex align-items-center gap-2">' +
+            '<input type="checkbox" class="form-check-input med-temp" ' + (isTemp ? 'checked' : '') + '>' +
+            '<span class="small">Medicacion temporal (no se descuenta de stock)</span>' +
+        '</div>' +
+        '<div class="col-12 mt-2 d-flex justify-content-end">' +
+            '<button type="button" class="btn btn-outline-danger btn-sm" onclick="eliminarFila(this)">Quitar droga</button>' +
+        '</div>' +
+        '<div class="col-12"><hr class="border-secondary mt-3 mb-1"></div>';
+
+    document.getElementById('lista-prescripciones').appendChild(div);
+}
+
+function eliminarFila(btn) {
+    const row = btn.closest('.item-presc');
+    if (row) row.remove();
+}
+
+async function eliminarP(id) {
+    if (confirm('¿Borrar paciente?')) {
+        if (!modoOffline) {
+            await fetch(URL_BASE + '/' + RES_PATS + '/' + id, { method: 'DELETE' });
+        }
+        listadoPats = listadoPats.filter(function(p){ return p.id != id; });
+        persistirLocal();
+        renderizar();
+    }
+}
+
+iniciar();
+</script>
+</body>
+</html>
