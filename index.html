@@ -10,84 +10,41 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
-        :root {
-            font-size: 17px;
-            line-height: 1.5;
-        }
-
+        :root { font-size: 17px; line-height: 1.5; }
         body {
             background-color: #121212;
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             color: #f5f5f5;
             padding-bottom: 70px;
         }
-
-        button:focus-visible,
-        a:focus-visible {
+        button:focus-visible, a:focus-visible {
             outline: 3px solid #facc15;
             outline-offset: 2px;
         }
-
-        .navbar {
-            background: #1f2933;
-        }
-
+        .navbar { background: #1f2933; }
         .nav-pills .nav-link {
             background-color: #111827;
             color: #e5e7eb;
             font-size: 0.95rem;
         }
-
-        .nav-pills .nav-link.active {
-            background-color: #2563eb;
-        }
-
+        .nav-pills .nav-link.active { background-color: #2563eb; }
         .card {
             background: #1e1e1e;
             color: #f5f5f5;
             border-radius: 1rem;
             border: 2px solid #374151;
         }
-
-        .paciente-card {
-            margin-bottom: 1.5rem;
-            border-radius: 1rem;
-        }
-
-        .planilla-inner-table {
-            font-size: 0.9rem;
-        }
-
-        .planilla-inner-table th,
-        .planilla-inner-table td {
-            border-width: 2px !important;
-        }
-
-        .table-responsive {
-            font-size: 0.9rem;
-        }
-
-        .stock-wrapper {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
+        .paciente-card { margin-bottom: 1.5rem; border-radius: 1rem; }
+        .planilla-inner-table { font-size: 0.9rem; }
+        .planilla-inner-table th, .planilla-inner-table td { border-width: 2px !important; }
+        .table-responsive { font-size: 0.9rem; }
+        .stock-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         @media (max-width: 768px) {
-            h3 {
-                font-size: 1.1rem;
-            }
-            .navbar-brand {
-                font-size: 1rem;
-            }
-            #tabla-stock-table {
-                min-width: 650px;
-            }
-            #tabla-stock-table th,
-            #tabla-stock-table td {
-                white-space: nowrap;
-            }
+            h3 { font-size: 1.1rem; }
+            .navbar-brand { font-size: 1rem; }
+            #tabla-stock-table { min-width: 650px; }
+            #tabla-stock-table th, #tabla-stock-table td { white-space: nowrap; }
         }
-
         .dia-count {
             font-size: 0.95rem;
             padding: 0.25rem 0.75rem;
@@ -97,223 +54,77 @@
             border: 1px solid #0f172a;
             font-weight: 600;
         }
-
         .modal-content {
             background-color: #1e1e1e;
             color: #f5f5f5;
             border-radius: 1rem;
             border-width: 2px;
         }
-
         .form-control {
             background-color: #111827;
             border-color: #4b5563;
             color: #f9fafb;
             font-size: 0.9rem;
         }
-
         .form-control:focus {
             background-color: #111827;
             color: #f9fafb;
             border-color: #facc15;
             box-shadow: 0 0 0 0.15rem rgba(250, 204, 21, 0.35);
         }
-
-        .badge-turno {
-            border-radius: 999px;
-            padding: 0.15rem 0.6rem;
-            font-size: 0.8rem;
-        }
-
-        .btn {
-            font-size: 0.95rem;
-            border-radius: 999px;
-        }
-
-        .btn-group-sm .btn {
-            padding-inline: 0.6rem;
-        }
-
-        .temp-med-row {
-            background-color: rgba(250, 204, 21, 0.18);
-        }
-
-        .temp-med-border {
-            border-color: #eab308 !important;
-        }
-
+        .btn { font-size: 0.95rem; border-radius: 999px; }
+        .temp-med-row { background-color: rgba(250, 204, 21, 0.18); }
+        .temp-med-border { border-color: #eab308 !important; }
         .avatar-circle {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            color: #f9fafb;
-            margin-right: 0.75rem;
-            flex-shrink: 0;
+            width: 44px; height: 44px; border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-weight: 600; color: #f9fafb; margin-right: 0.75rem; flex-shrink: 0;
             border: 2px solid #4b5563;
         }
-
-        .bottom-nav {
-            display: none;
-        }
-
+        .bottom-nav { display: none; }
         @media (max-width: 768px) {
             .bottom-nav {
-                display: flex;
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                background-color: #020617;
-                border-top: 1px solid #374151;
-                z-index: 1030;
+                display: flex; position: fixed; bottom: 0; left: 0; right: 0;
+                background-color: #020617; border-top: 1px solid #374151; z-index: 1030;
             }
             .bottom-nav .nav-link {
-                flex: 1;
-                text-align: center;
-                padding: 0.7rem 0.2rem;
-                font-size: 0.85rem;
-                color: #9ca3af;
-                border-radius: 0;
+                flex: 1; text-align: center; padding: 0.7rem 0.2rem;
+                font-size: 0.85rem; color: #9ca3af; border-radius: 0;
             }
-            .bottom-nav .nav-link span {
-                display: block;
-                font-size: 1.1rem;
-            }
+            .bottom-nav .nav-link span { display: block; font-size: 1.1rem; }
             .bottom-nav .nav-link.active {
-                color: #f9fafb;
-                background-color: #111827;
+                color: #f9fafb; background-color: #111827;
             }
         }
-
         @media print {
-            @page {
-                size: A4 portrait;
-                margin: 1cm;
-            }
-            body {
-                background: #ffffff;
-                color: #000000;
-                padding-bottom: 0;
-            }
-            .navbar,
-            .nav,
-            .btn,
-            #modalPaciente,
-            #modalDetallePaciente,
-            #modalHistorialStock,
-            #modalCarrito,
-            #modalAccionesStock,
-            .bottom-nav {
-                display: none !important;
-            }
-            .card.paciente-card {
-                break-inside: avoid;
-                box-shadow: none !important;
-                border-color: #000 !important;
-            }
-            #tab-stock {
-                display: none !important;
-            }
+            @page { size: A4 portrait; margin: 1cm; }
+            body { background: #ffffff; color: #000000; padding-bottom: 0; }
+            .navbar,.nav,.btn,#modalPaciente,#modalDetallePaciente,#modalHistorialStock,
+            #modalCarrito,#modalAccionesStock,#modalNuevoMed,.bottom-nav { display:none!important; }
+            .card.paciente-card { break-inside: avoid; box-shadow:none!important; border-color:#000!important; }
+            #tab-stock { display:none!important; }
         }
-
         .btn-icon {
-            width: 44px;
-            height: 44px;
-            padding: 0;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 999px;
+            width: 44px; height: 44px; padding: 0;
+            display:inline-flex; align-items:center; justify-content:center;
+            border-radius:999px;
         }
-
-        .btn-icon:hover {
-            background-color: #1d4ed8;
-            border-color: #1d4ed8;
-        }
-
-        .btn-icon:active {
-            background-color: #1e40af;
-            border-color: #1e40af;
-        }
-
+        .btn-icon:hover { background-color:#1d4ed8; border-color:#1d4ed8; }
+        .btn-icon:active { background-color:#1e40af; border-color:#1e40af; }
         .acciones-stock-btn {
-            border-radius: 0.9rem;
-            border-width: 2px;
-            font-size: 1rem;
-            padding: 0.85rem 1rem;
-            text-align: left;
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
+            border-radius:0.9rem; border-width:2px; font-size:1rem;
+            padding:0.85rem 1rem; text-align:left;
+            display:flex; align-items:center; gap:0.6rem;
         }
-
-        .acciones-stock-btn span.icono {
-            font-size: 1.2rem;
-        }
-
-        .acciones-stock-btn:hover {
-            filter: brightness(1.08);
-        }
-
-        .acciones-stock-btn.is-active-touch {
-            outline: 3px solid #facc15;
-            outline-offset: 1px;
-        }
-
-        @media (max-width: 768px) {
-            .acciones-stock-btn {
-                font-size: 1.05rem;
-                padding: 1rem 1.1rem;
-            }
-        }
-
-        .btn-accion-editar {
-            background-color: #1d4ed8;
-            border-color: #1d4ed8;
-            color: #f9fafb;
-        }
-
-        .btn-accion-agregar {
-            background-color: #15803d;
-            border-color: #15803d;
-            color: #f9fafb;
-        }
-
-        .btn-accion-descontar {
-            background-color: #b91c1c;
-            border-color: #b91c1c;
-            color: #f9fafb;
-        }
-
-        .btn-accion-historial {
-            background-color: #0f172a;
-            border-color: #4b5563;
-            color: #e5e7eb;
-        }
-
-        .btn-accion-historial:hover {
-            background-color: #111827;
-        }
-
-        /* Botones paciente accesibles */
-        .btn-accion-paciente {
-            font-weight: 500;
-            border-radius: 999px;
-        }
-        .btn-accion-paciente:focus-visible {
-            outline: 3px solid #facc15;
-            outline-offset: 2px;
-        }
-        @media (hover: none) {
-            .btn-accion-paciente:active {
-                transform: scale(0.97);
-                box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.4);
-            }
-        }
+        .acciones-stock-btn span.icono { font-size:1.2rem; }
+        .acciones-stock-btn.is-active-touch { outline:3px solid #facc15; outline-offset:1px; }
+        .btn-accion-editar { background-color:#1d4ed8; border-color:#1d4ed8; color:#f9fafb; }
+        .btn-accion-agregar { background-color:#15803d; border-color:#15803d; color:#f9fafb; }
+        .btn-accion-descontar { background-color:#b91c1c; border-color:#b91c1c; color:#f9fafb; }
+        .btn-accion-historial { background-color:#0f172a; border-color:#4b5563; color:#e5e7eb; }
+        .btn-accion-historial:hover { background-color:#111827; }
+        .btn-accion-paciente { font-weight:500; border-radius:999px; }
+        .btn-accion-paciente:focus-visible { outline:3px solid #facc15; outline-offset:2px; }
     </style>
 </head>
 <body>
@@ -338,10 +149,21 @@
     <div class="tab-content">
         <div class="tab-pane fade show active" id="tab-pats">
             <div class="d-flex justify-content-between mb-3 align-items-center flex-wrap gap-2">
-                <h3>Pacientes</h3>
+                <div class="d-flex flex-column flex-md-row gap-2 align-items-md-center">
+                    <h3 class="mb-0">Pacientes</h3>
+                    <input
+                        type="text"
+                        id="buscador-pacientes"
+                        class="form-control form-control-sm"
+                        placeholder="Buscar paciente..."
+                        aria-label="Buscar paciente por nombre o DNI">
+                </div>
                 <div class="d-flex gap-2 flex-wrap">
-                    <button class="btn btn-primary" onclick="abrirModal()">+ Registrar Paciente</button>
-                    <button class="btn btn-outline-light" onclick="imprimirPlanilla()">🖨 Imprimir A4</button>
+                    <button class="btn btn-outline-light btn-sm" type="button" onclick="ordenarPacientesAlfabetico()">
+                        ↕️ Ordenar A-Z
+                    </button>
+                    <button class="btn btn-primary" type="button" onclick="abrirModal()">+ Registrar Paciente</button>
+                    <button class="btn btn-outline-light" type="button" onclick="imprimirPlanilla()">🖨 Imprimir A4</button>
                 </div>
             </div>
             <div id="lista-pacientes-planilla"></div>
@@ -350,8 +172,11 @@
         <div class="tab-pane fade" id="tab-stock">
             <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                 <h3>Estado de Suministros</h3>
-                <div>
-                    <button class="btn btn-warning btn-sm" onclick="abrirCarrito()">🛒 Ver carrito</button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success btn-sm" type="button" onclick="abrirModalNuevoMed()">
+                        ➕ Nuevo medicamento
+                    </button>
+                    <button class="btn btn-warning btn-sm" type="button" onclick="abrirCarrito()">🛒 Ver carrito</button>
                 </div>
             </div>
             <div class="card p-3 shadow-sm rounded-4">
@@ -362,7 +187,7 @@
                                 <th>Droga</th>
                                 <th>Presentación</th>
                                 <th>Stock</th>
-                                <th>Consumo/día</th>
+                                <th>Consumo/día (comp.)</th>
                                 <th>Días / Fecha fin</th>
                                 <th>Acción</th>
                             </tr>
@@ -431,13 +256,15 @@
                 <input type="text" id="in-alergias" class="form-control mb-3" placeholder="Alergias (texto libre)">
                 <h6>Prescripciones:</h6>
                 <p class="small text-muted mb-1">
-                    Dosis diaria en mg/mcg (puede ser decimal, ej.: 0.25). Presentación = fuerza del comprimido (75, 100, 150, etc.). Para medicación temporal activar “Temporaria”.
+                    Dosis = mg de cada comprimido (ej. 100). La dosis diaria se calcula automáticamente multiplicando por los comprimidos de cada turno.
                 </p>
                 <div id="lista-prescripciones"></div>
                 <button class="btn btn-sm btn-outline-secondary mt-2" onclick="nuevaFila()">+ Otra droga</button>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary w-100" onclick="guardarPaciente()">Guardar Cambios</button>
+                <button class="btn btn-primary w-100" id="btn-guardar-paciente" onclick="guardarPaciente()">
+                    Guardar Cambios
+                </button>
             </div>
         </div>
     </div>
@@ -499,6 +326,28 @@
   </div>
 </div>
 
+<!-- MODAL NUEVO MEDICAMENTO -->
+<div class="modal fade" id="modalNuevoMed" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">Nuevo medicamento</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="med-nombre" class="form-control mb-2" placeholder="Nombre (droga)">
+        <input type="text" id="med-strength" class="form-control mb-2" placeholder="Presentación (ej. 100)">
+        <input type="number" min="0" id="med-stock" class="form-control mb-2" placeholder="Stock inicial (comprimidos)">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-success w-100" type="button" onclick="guardarNuevoMed()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<datalist id="lista-meds-sugeridos"></datalist>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
@@ -510,13 +359,14 @@ let listadoMeds = [];
 let listadoPats = [];
 let modoOffline = true;
 
-const DEFAULT_MG_PER_UNIT = 100;
 const DIAS_MINIMOS = 5;
 const DIAS_OBJETIVO = 10;
 
 let medAccionesActualId = null;
+let filtroPacientes = '';
+let pacienteArrastradoId = null;
 
-/* Service Worker básico */
+/* SW básico */
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         const swCode = `
@@ -561,7 +411,7 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-/* Utilidades */
+/* Utils */
 function parseDecimal(value) {
     if (value === null || value === undefined) return 0;
     if (typeof value === 'number') return value;
@@ -569,7 +419,6 @@ function parseDecimal(value) {
     const n = parseFloat(s);
     return Number.isNaN(n) ? 0 : n;
 }
-
 function getInitials(name) {
     if (!name) return '?';
     const parts = name.trim().split(/\s+/);
@@ -578,8 +427,8 @@ function getInitials(name) {
     const last = parts[parts.length - 1].charAt(0).toUpperCase();
     return first + last;
 }
-
 function getAvatarColor(name) {
+    // array limpio, sin caracteres extraños
     const colors = ['#ef4444','#f97316','#eab308','#22c55e','#0ea5e9','#6366f1','#a855f7','#ec4899'];
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
@@ -604,70 +453,182 @@ function activarTab(id) {
     if (id === 'tab-pats') btnPatsBottom.classList.add('active');
     if (id === 'tab-stock') btnStockBottom.classList.add('active');
 }
-
 document.addEventListener('shown.bs.tab', function (event) {
     const targetId = event.target.getAttribute('data-bs-target');
     if (targetId === '#tab-pats') activarTab('tab-pats');
     if (targetId === '#tab-stock') activarTab('tab-stock');
 });
 
-/* Carga inicial */
+/* LocalStorage helpers */
+function usarCargaLocal() {
+    listadoMeds = JSON.parse(localStorage.getItem('local_meds')) || [];
+    listadoPats = JSON.parse(localStorage.getItem('local_pats')) || [];
+    document.getElementById('status-indicator').innerText = "Modo Local";
+}
+function persistirLocal() {
+    localStorage.setItem('local_meds', JSON.stringify(listadoMeds));
+    localStorage.setItem('local_pats', JSON.stringify(listadoPats));
+}
+
+/* Descuento automático diario al abrir la app */
+const DAILY_KEY = 'ultima_actualizacion_stock';
+async function aplicarDescuentoDiario() {
+    const hoy = new Date();
+    const hoyYmd = hoy.toISOString().substring(0,10);
+    const ultima = localStorage.getItem(DAILY_KEY);
+
+    if (ultima === hoyYmd) return;
+
+    let diasPasados = 1;
+    if (ultima) {
+        const dUltima = new Date(ultima + 'T00:00:00');
+        const diffMs = hoy.getTime() - dUltima.getTime();
+        diasPasados = Math.max(1, Math.floor(diffMs / (1000*60*60*24)));
+    }
+
+    listadoMeds.forEach(m => {
+        const consumo = calcularConsumoCompPorMed(m);
+        if (consumo <= 0) return;
+        const stockActual = parseDecimal(m.stock);
+        if (stockActual <= 0) return;
+        const descuento = consumo * diasPasados;
+        const nuevoStock = Math.max(0, stockActual - descuento);
+        const cambio = nuevoStock - stockActual;
+        if (cambio === 0) return;
+
+        m.stock = nuevoStock;
+        m.stockHistory = m.stockHistory || [];
+        m.stockHistory.push({
+            date: new Date().toISOString(),
+            change: cambio,
+            newStock: nuevoStock,
+            type: 'auto-day'
+        });
+    });
+
+    localStorage.setItem(DAILY_KEY, hoyYmd);
+    persistirLocal();
+}
+
+/* Carga inicial optimizada */
 async function iniciar() {
+    usarCargaLocal();
+    inicializarModalAccionesStock();
+    inicializarBuscadorPacientes();
+
+    await aplicarDescuentoDiario();
+    renderizar();
+    actualizarDatalistMeds();
+
     try {
         const [rM, rP] = await Promise.all([
             fetch(URL_BASE + '/' + RES_MEDS),
             fetch(URL_BASE + '/' + RES_PATS)
         ]);
         if (rM.ok && rP.ok) {
-            listadoMeds = await rM.json();
-            listadoPats = await rP.json();
+            const medsApi = await rM.json();
+            const patsApi = await rP.json();
+            listadoMeds = medsApi;
+            listadoPats = patsApi;
             modoOffline = false;
+
+            await aplicarDescuentoDiario();
+
             document.getElementById('status-indicator').innerText = "Modo Online (API)";
+            persistirLocal();
+            renderizar();
+            actualizarDatalistMeds();
         } else {
-            usarCargaLocal();
+            document.getElementById('status-indicator').innerText = "Modo Local (Error API)";
         }
     } catch (e) {
-        usarCargaLocal();
+        document.getElementById('status-indicator').innerText = "Modo Local (Sin conexión)";
     }
-    inicializarModalAccionesStock();
-    renderizar();
-}
-
-function usarCargaLocal() {
-    listadoMeds = JSON.parse(localStorage.getItem('local_meds')) || [];
-    listadoPats = JSON.parse(localStorage.getItem('local_pats')) || [];
-    document.getElementById('status-indicator').innerText = "Modo Local (Seguro)";
-}
-
-function persistirLocal() {
-    localStorage.setItem('local_meds', JSON.stringify(listadoMeds));
-    localStorage.setItem('local_pats', JSON.stringify(listadoPats));
 }
 
 function renderizar() {
     renderPacientesPlanilla();
     renderStock();
 }
+function imprimirPlanilla() { window.print(); }
 
-function imprimirPlanilla() {
-    window.print();
+/* Buscador + orden */
+function inicializarBuscadorPacientes() {
+    const input = document.getElementById('buscador-pacientes');
+    if (input) {
+        input.addEventListener('input', () => {
+            filtroPacientes = input.value.trim().toLowerCase();
+            renderPacientesPlanilla();
+        });
+    }
+}
+function ordenarPacientesAlfabetico() {
+    listadoPats.sort((a, b) => {
+        const an = (a.name || '').toLowerCase();
+        const bn = (b.name || '').toLowerCase();
+        if (an < bn) return -1;
+        if (an > bn) return 1;
+        return 0;
+    });
+    persistirLocal();
+    renderPacientesPlanilla();
+}
+
+/* Drag & drop pacientes */
+function dragPacienteStart(ev) {
+    const id = ev.currentTarget.getAttribute('data-paciente-id');
+    pacienteArrastradoId = id;
+    if (ev.dataTransfer) ev.dataTransfer.effectAllowed = 'move';
+}
+function dragPacienteOver(ev) {
+    ev.preventDefault();
+    if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move';
+}
+function dragPacienteDrop(ev) {
+    ev.preventDefault();
+    const targetCard = ev.currentTarget;
+    const targetId = targetCard.getAttribute('data-paciente-id');
+    if (!pacienteArrastradoId || !targetId || pacienteArrastradoId === targetId) return;
+
+    const fromIndex = listadoPats.findIndex(p => p.id == pacienteArrastradoId);
+    const toIndex = listadoPats.findIndex(p => p.id == targetId);
+    if (fromIndex === -1 || toIndex === -1) return;
+
+    const [movido] = listadoPats.splice(fromIndex, 1);
+    listadoPats.splice(toIndex, 0, movido);
+
+    persistirLocal();
+    renderPacientesPlanilla();
 }
 
 /* Pacientes */
 function renderPacientesPlanilla() {
     const cont = document.getElementById('lista-pacientes-planilla');
-    cont.innerHTML = listadoPats.map(p => {
+
+    const filtrados = listadoPats.filter(p => {
+        if (!filtroPacientes) return true;
+        const nombre = (p.name || '').toLowerCase();
+        const dni = (p.dni || '').toLowerCase();
+        return nombre.includes(filtroPacientes) || dni.includes(filtroPacientes);
+    });
+
+    cont.innerHTML = filtrados.map(p => {
         const lastTxt = p.lastUpdated
             ? new Date(p.lastUpdated).toLocaleString('es-AR')
             : 'Sin registro';
         const nombre = p.name || '';
-        const initials = getInitials(nombre);
-        const avatarColor = getAvatarColor(nombre);
         const alergiasTxt = (p.allergies || '').trim();
         const alergiasMostrar = alergiasTxt ? '⚠️ ' + alergiasTxt : 'Sin datos';
+        const initials = getInitials(nombre);
+        const avatarColor = getAvatarColor(nombre);
 
         return '' +
-        '<div class="card paciente-card shadow-sm p-3 p-md-4 border-2">' +
+        '<div class="card paciente-card shadow-sm p-3 p-md-4 border-2" ' +
+            'draggable="true" ' +
+            'data-paciente-id="' + p.id + '" ' +
+            'ondragstart="dragPacienteStart(event)" ' +
+            'ondragover="dragPacienteOver(event)" ' +
+            'ondrop="dragPacienteDrop(event)">' +
           '<div class="d-flex justify-content-between flex-wrap gap-2 mb-2">' +
             '<div class="d-flex align-items-start">' +
               '<div class="avatar-circle" style="background-color:' + avatarColor + ';">' +
@@ -680,10 +641,10 @@ function renderPacientesPlanilla() {
                 '<div class="small text-muted mt-1">Última actualización: ' + lastTxt + '</div>' +
               '</div>' +
             '</div>' +
-            '<div class="d-flex gap-2 flex-wrap" role="group" aria-label="Acciones para ' + nombre + '">' +
-              '<button class="btn btn-light btn-sm btn-accion-paciente" type="button" onclick="abrirEdicion(\'' + p.id + '\')" aria-label="Editar datos de ' + nombre + '">✏️ Editar</button>' +
-              '<button class="btn btn-info btn-sm btn-accion-paciente" type="button" onclick="verDetallePaciente(\'' + p.id + '\')" aria-label="Ver detalle de ' + nombre + '">👁 Detalle</button>' +
-              '<button class="btn btn-danger btn-sm btn-accion-paciente" type="button" onclick="eliminarP(\'' + p.id + '\')" aria-label="Borrar registro de ' + nombre + '">🗑 Borrar</button>' +
+            '<div class="d-flex gap-2 flex-wrap">' +
+              '<button class="btn btn-light btn-sm btn-accion-paciente" type="button" onclick="abrirEdicion(\'' + p.id + '\')">✏️ Editar</button>' +
+              '<button class="btn btn-info btn-sm btn-accion-paciente" type="button" onclick="verDetallePaciente(\'' + p.id + '\')">👁 Detalle</button>' +
+              '<button class="btn btn-danger btn-sm btn-accion-paciente" type="button" onclick="eliminarP(\'' + p.id + '\')">🗑 Borrar</button>' +
             '</div>' +
           '</div>' +
           '<div class="table-responsive rounded-4 overflow-hidden">' +
@@ -691,7 +652,7 @@ function renderPacientesPlanilla() {
               '<thead>' +
                 '<tr>' +
                   '<th>Medicación</th>' +
-                  '<th>Dosis (mg/día)</th>' +
+                  '<th>Dosis total (mg/día)</th>' +
                   '<th>Mañana (comp.)</th>' +
                   '<th>Tarde (comp.)</th>' +
                   '<th>Noche (comp.)</th>' +
@@ -701,17 +662,17 @@ function renderPacientesPlanilla() {
               '<tbody>' +
                 ((p.prescriptions || []).length
                   ? (p.prescriptions || []).map(pr => {
-                        const dosis = pr.dailyDosageMg || pr.dailyDosage || '';
                         const mTabs = parseDecimal(pr.morningTabs);
                         const aTabs = parseDecimal(pr.afternoonTabs);
                         const nTabs = parseDecimal(pr.nightTabs);
                         const totalTabs = mTabs + aTabs + nTabs;
+                        const dosisDia = parseDecimal(pr.dailyDosageMg);
                         const tempClass = pr.isTemporary ? 'temp-med-row temp-med-border' : '';
                         const labelTemp = pr.isTemporary ? ' (TEMP)' : '';
                         return '' +
                         '<tr class="' + tempClass + '">' +
                           '<td>' + (pr.medName || '') + (pr.strength ? ' (' + pr.strength + ')' : '') + labelTemp + '</td>' +
-                          '<td>' + dosis + '</td>' +
+                          '<td>' + dosisDia + '</td>' +
                           '<td>' + mTabs + '</td>' +
                           '<td>' + aTabs + '</td>' +
                           '<td>' + nTabs + '</td>' +
@@ -727,23 +688,22 @@ function renderPacientesPlanilla() {
     }).join('');
 }
 
-/* Stock e inventario */
+/* Stock */
 function calcularConsumoCompPorMed(m) {
     return listadoPats.reduce((acc, p) => {
         return acc + (p.prescriptions || []).reduce((subAcc, pr) => {
             if (pr.isTemporary) return subAcc;
             if (
                 (pr.medName || '').toLowerCase() !== (m.name || '').toLowerCase() ||
-                parseDecimal(pr.strength) !== parseDecimal(m.strength)
+                String(pr.strength || '').toLowerCase() !== String(m.strength || '').toLowerCase()
             ) return subAcc;
-            const mgPerUnit = parseDecimal(pr.mgPerUnit) || parseDecimal(m.mgPerUnit) || DEFAULT_MG_PER_UNIT;
-            const dosisDia = parseDecimal(pr.dailyDosageMg || pr.dailyDosage);
-            const compDia = mgPerUnit > 0 ? dosisDia / mgPerUnit : 0;
-            return subAcc + compDia;
+            const totalTabs = parseDecimal(pr.morningTabs) +
+                              parseDecimal(pr.afternoonTabs) +
+                              parseDecimal(pr.nightTabs);
+            return subAcc + totalTabs;
         }, 0);
     }, 0);
 }
-
 function renderStock() {
     const tabla = document.getElementById('tabla-stock');
     tabla.innerHTML = listadoMeds.map(m => {
@@ -759,14 +719,11 @@ function renderStock() {
 
         let colorStyle = 'background-color: #22c55e;';
         if (consumoComp > 0) {
-            if (dias <= 5) {
-                colorStyle = 'background-color: #ef4444;';
-            } else if (dias <= 10) {
-                colorStyle = 'background-color: #eab308;';
-            }
+            if (dias <= 5) colorStyle = 'background-color: #ef4444;';
+            else if (dias <= 10) colorStyle = 'background-color: #eab308;';
         }
 
-        const strengthTxt = m.strength ? String(m.strength) : (m.mgPerUnit || '');
+        const strengthTxt = m.strength ? String(m.strength) : '';
 
         return '' +
         '<tr>' +
@@ -785,7 +742,7 @@ function renderStock() {
     }).join('');
 }
 
-/* Modal de acciones stock */
+/* Acciones stock */
 function inicializarModalAccionesStock() {
     const btnEditar = document.getElementById('btn-accion-editar');
     const btnAgregar = document.getElementById('btn-accion-agregar');
@@ -823,17 +780,14 @@ function inicializarModalAccionesStock() {
         if (id) verHistorialStock(id);
     });
 }
-
 function abrirAccionesStock(id) {
     medAccionesActualId = id;
     const med = listadoMeds.find(m => m.id == id);
     const title = document.getElementById('acciones-stock-title');
-    title.innerText = med ? ('Acciones: ' + med.name + ' ' + (med.strength || med.mgPerUnit || '')) : 'Acciones de stock';
+    title.innerText = med ? ('Acciones: ' + med.name + ' ' + (med.strength || '')) : 'Acciones de stock';
     const modal = new bootstrap.Modal(document.getElementById('modalAccionesStock'));
     modal.show();
 }
-
-/* Editar / agregar / descontar / historial stock */
 async function editStock(id) {
     const med = listadoMeds.find(x => x.id == id);
     if (!med) return;
@@ -861,7 +815,6 @@ async function editStock(id) {
     persistirLocal();
     renderStock();
 }
-
 async function addStock(id) {
     const med = listadoMeds.find(x => x.id == id);
     if (!med) return;
@@ -889,7 +842,6 @@ async function addStock(id) {
     persistirLocal();
     renderStock();
 }
-
 async function subStock(id) {
     const med = listadoMeds.find(x => x.id == id);
     if (!med) return;
@@ -918,13 +870,12 @@ async function subStock(id) {
     persistirLocal();
     renderStock();
 }
-
 function verHistorialStock(id) {
     const med = listadoMeds.find(x => x.id == id);
     if (!med) return;
     const hist = med.stockHistory || [];
     document.getElementById('historial-title').innerText =
-        'Historial de ' + (med.name || '') + ' (' + (med.strength || med.mgPerUnit || '') + ')';
+        'Historial de ' + (med.name || '') + ' (' + (med.strength || '') + ')';
     const cont = document.getElementById('historial-contenido');
     if (!hist.length) {
         cont.innerHTML = '<p class="small text-muted">Sin movimientos registrados.</p>';
@@ -945,6 +896,7 @@ function verHistorialStock(id) {
                     let tipo = 'Seteo';
                     if (h.type === 'add') tipo = 'Reposición';
                     else if (h.type === 'sub') tipo = 'Descuento';
+                    else if (h.type === 'auto-day') tipo = 'Consumo diario automático';
                     return '' +
                       '<tr>' +
                         '<td>' + new Date(h.date).toLocaleString('es-AR') + '</td>' +
@@ -972,14 +924,13 @@ function obtenerItemsCarrito() {
             const falta = Math.max(0, Math.ceil(DIAS_OBJETIVO * consumo - stock));
             items.push({
                 nombre: m.name,
-                strength: m.strength || m.mgPerUnit || '',
+                strength: m.strength || '',
                 falta: falta
             });
         }
     });
     return items;
 }
-
 function abrirCarrito() {
     const lista = document.getElementById('carrito-lista');
     const items = obtenerItemsCarrito();
@@ -993,7 +944,6 @@ function abrirCarrito() {
     document.getElementById('carrito-msg').innerText = '';
     new bootstrap.Modal('#modalCarrito').show();
 }
-
 async function copiarCarrito() {
     const items = obtenerItemsCarrito();
     if (!items.length) {
@@ -1015,7 +965,7 @@ async function copiarCarrito() {
     }
 }
 
-/* Alta / edición paciente */
+/* Paciente: abrir / editar */
 function abrirModal() {
     document.getElementById('modalTitle').innerText = 'Nuevo Registro';
     document.getElementById('edit-id').value = '';
@@ -1026,7 +976,6 @@ function abrirModal() {
     nuevaFila();
     new bootstrap.Modal('#modalPaciente').show();
 }
-
 function abrirEdicion(id) {
     const p = listadoPats.find(x => x.id == id);
     if (!p) return;
@@ -1041,11 +990,8 @@ function abrirEdicion(id) {
     (p.prescriptions || []).forEach(pr => {
         nuevaFila(
             pr.medName || '',
-            pr.dailyDosageMg || pr.dailyDosage || '',
+            pr.dosisPorComprimidoMg || '',
             pr.strength || '',
-            pr.mgPerUnit || '',
-            pr.timesPerDay || '',
-            pr.shift || '',
             pr.morningTabs || '',
             pr.afternoonTabs || '',
             pr.nightTabs || '',
@@ -1056,8 +1002,9 @@ function abrirEdicion(id) {
     new bootstrap.Modal('#modalPaciente').show();
 }
 
+/* Nueva fila: dosis = mg/comp. */
 function nuevaFila(
-    n = '', d = '', strength = '', mgUnit = '', times = '', shift = '',
+    n = '', dosisComp = '', strength = '',
     mTabs = '', aTabs = '', nTabs = '', isTemp = false
 ) {
     const cont = document.getElementById('lista-prescripciones');
@@ -1066,21 +1013,20 @@ function nuevaFila(
     fila.className = 'border rounded-3 p-2 mb-2';
     fila.innerHTML = `
         <div class="row g-2 align-items-end">
-            <div class="col-6">
+            <div class="col-4">
                 <label class="form-label small">Droga</label>
-                <input type="text" class="form-control in-medName" value="${n}">
+                <input type="text"
+                       class="form-control in-medName"
+                       list="lista-meds-sugeridos"
+                       value="${n}">
             </div>
             <div class="col-3">
-                <label class="form-label small">Fuerza</label>
+                <label class="form-label small">Presentación</label>
                 <input type="text" class="form-control in-strength" value="${strength}">
             </div>
             <div class="col-3">
-                <label class="form-label small">mg por comp.</label>
-                <input type="text" class="form-control in-mgUnit" value="${mgUnit}">
-            </div>
-            <div class="col-4">
-                <label class="form-label small">Dosis diaria (mg)</label>
-                <input type="text" class="form-control in-dosis" value="${d}">
+                <label class="form-label small">Dosis (mg/comp.)</label>
+                <input type="text" class="form-control in-dosisComp" value="${dosisComp}">
             </div>
             <div class="col-2">
                 <label class="form-label small">Mañana</label>
@@ -1109,91 +1055,151 @@ function nuevaFila(
     `;
     cont.appendChild(fila);
 }
-
 function eliminarFila(btn) {
     const fila = btn.closest('.border');
     if (fila && fila.parentNode) fila.parentNode.removeChild(fila);
 }
 
+/* Guardar paciente con spinner y dosis diaria correcta */
 async function guardarPaciente() {
-    const id = document.getElementById('edit-id').value || null;
-    const nombre = document.getElementById('in-nombre').value.trim();
-    const dni = document.getElementById('in-dni').value.trim();
-    const alergias = document.getElementById('in-alergias').value.trim();
+    const btn = document.getElementById('btn-guardar-paciente');
+    const textoOriginal = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Guardando…';
 
-    if (!nombre) {
-        alert('El nombre es obligatorio');
-        return;
-    }
+    try {
+        const id = document.getElementById('edit-id').value || null;
+        const nombre = document.getElementById('in-nombre').value.trim();
+        const dni = document.getElementById('in-dni').value.trim();
+        const alergias = document.getElementById('in-alergias').value.trim();
 
-    const pres = [];
-    document.querySelectorAll('#lista-prescripciones > div').forEach(div => {
-        const medName = div.querySelector('.in-medName').value.trim();
-        const strength = div.querySelector('.in-strength').value.trim();
-        const mgPerUnit = div.querySelector('.in-mgUnit').value.trim();
-        const dosis = div.querySelector('.in-dosis').value.trim();
-        const mTabs = div.querySelector('.in-mTabs').value.trim();
-        const aTabs = div.querySelector('.in-aTabs').value.trim();
-        const nTabs = div.querySelector('.in-nTabs').value.trim();
-        const isTemp = div.querySelector('.in-temp').checked;
+        if (!nombre) {
+            alert('El nombre es obligatorio');
+            return;
+        }
 
-        if (!medName && !dosis) return;
+        const pres = [];
+        const medsNuevos = [];
 
-        pres.push({
-            medName,
-            strength,
-            mgPerUnit,
-            dailyDosageMg: parseDecimal(dosis),
-            morningTabs: parseDecimal(mTabs),
-            afternoonTabs: parseDecimal(aTabs),
-            nightTabs: parseDecimal(nTabs),
-            isTemporary: isTemp
+        document.querySelectorAll('#lista-prescripciones > div').forEach(div => {
+            const medName = div.querySelector('.in-medName').value.trim();
+            const strength = div.querySelector('.in-strength').value.trim();
+            const dosisComp = parseDecimal(div.querySelector('.in-dosisComp').value.trim());
+            const mTabs = parseDecimal(div.querySelector('.in-mTabs').value.trim());
+            const aTabs = parseDecimal(div.querySelector('.in-aTabs').value.trim());
+            const nTabs = parseDecimal(div.querySelector('.in-nTabs').value.trim());
+            const isTemp = div.querySelector('.in-temp').checked;
+
+            if (!medName && !dosisComp) return;
+
+            const totalTabsDia = mTabs + aTabs + nTabs;
+            const dailyDosageMg = dosisComp * totalTabsDia;
+
+            pres.push({
+                medName,
+                strength,
+                dosisPorComprimidoMg: dosisComp,
+                dailyDosageMg,
+                morningTabs: mTabs,
+                afternoonTabs: aTabs,
+                nightTabs: nTabs,
+                isTemporary: isTemp
+            });
+
+            if (medName) {
+                medsNuevos.push({ name: medName, strength });
+            }
         });
-    });
 
-    const payload = {
-        name: nombre,
-        dni,
-        allergies: alergias,
-        prescriptions: pres,
-        lastUpdated: new Date().toISOString()
-    };
+        const payload = {
+            name: nombre,
+            dni,
+            allergies: alergias,
+            prescriptions: pres,
+            lastUpdated: new Date().toISOString()
+        };
 
-    if (id) {
-        const idx = listadoPats.findIndex(p => p.id == id);
-        if (idx === -1) return;
-        listadoPats[idx] = { ...listadoPats[idx], ...payload };
-        if (!modoOffline) {
-            await fetch(URL_BASE + '/' + RES_PATS + '/' + id, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(listadoPats[idx])
-            });
-        }
-    } else {
-        const nuevo = { ...payload };
-        if (!modoOffline) {
-            const resp = await fetch(URL_BASE + '/' + RES_PATS, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(nuevo)
-            });
-            const creado = await resp.json();
-            nuevo.id = creado.id;
+        if (id) {
+            const idx = listadoPats.findIndex(p => p.id == id);
+            if (idx === -1) return;
+            listadoPats[idx] = { ...listadoPats[idx], ...payload };
+            if (!modoOffline) {
+                await fetch(URL_BASE + '/' + RES_PATS + '/' + id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(listadoPats[idx])
+                });
+            }
         } else {
-            nuevo.id = 'local-' + Date.now();
+            const nuevo = { ...payload };
+            if (!modoOffline) {
+                const resp = await fetch(URL_BASE + '/' + RES_PATS, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(nuevo)
+                });
+                const creado = await resp.json();
+                nuevo.id = creado.id;
+            } else {
+                nuevo.id = 'local-' + Date.now();
+            }
+            listadoPats.push(nuevo);
         }
-        listadoPats.push(nuevo);
+
+        await asegurarMedsEnStock(medsNuevos);
+
+        persistirLocal();
+        renderPacientesPlanilla();
+        renderStock();
+        actualizarDatalistMeds();
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalPaciente'));
+        if (modal) modal.hide();
+    } catch (e) {
+        alert('Hubo un problema al guardar. Revisá conexión e intentá de nuevo.');
+        console.error(e);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = textoOriginal;
     }
-
-    persistirLocal();
-    renderPacientesPlanilla();
-    renderStock();
-
-    const modal = bootstrap.Modal.getInstance(document.getElementById('modalPaciente'));
-    if (modal) modal.hide();
 }
 
+/* Crear meds en stock si no existen */
+async function asegurarMedsEnStock(lista) {
+    for (const item of lista) {
+        const name = item.name;
+        const strength = item.strength || '';
+        const yaExiste = listadoMeds.some(m =>
+            (m.name || '').toLowerCase() === name.toLowerCase() &&
+            String(m.strength || '').toLowerCase() === strength.toLowerCase()
+        );
+        if (yaExiste) continue;
+
+        const nuevoMed = {
+            name,
+            strength,
+            mgPerUnit: null,
+            stock: 0,
+            stockHistory: []
+        };
+
+        if (!modoOffline) {
+            const resp = await fetch(URL_BASE + '/' + RES_MEDS, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(nuevoMed)
+            });
+            const creado = await resp.json();
+            nuevoMed.id = creado.id;
+        } else {
+            nuevoMed.id = 'auto-med-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+        }
+
+        listadoMeds.push(nuevoMed);
+    }
+}
+
+/* Eliminar / detalle paciente */
 async function eliminarP(id) {
     if (!confirm('¿Seguro que querés borrar este paciente?')) return;
     listadoPats = listadoPats.filter(p => p.id != id);
@@ -1204,7 +1210,6 @@ async function eliminarP(id) {
     renderPacientesPlanilla();
     renderStock();
 }
-
 function verDetallePaciente(id) {
     const p = listadoPats.find(x => x.id == id);
     if (!p) return;
@@ -1226,7 +1231,7 @@ function verDetallePaciente(id) {
                     <thead>
                         <tr>
                             <th>Medicación</th>
-                            <th>Dosis (mg/día)</th>
+                            <th>Dosis total (mg/día)</th>
                             <th>Mañana</th>
                             <th>Tarde</th>
                             <th>Noche</th>
@@ -1236,7 +1241,7 @@ function verDetallePaciente(id) {
                         ${p.prescriptions.map(pr => `
                             <tr class="${pr.isTemporary ? 'temp-med-row temp-med-border' : ''}">
                                 <td>${pr.medName || ''} ${pr.strength ? '(' + pr.strength + ')' : ''} ${pr.isTemporary ? 'TEMP' : ''}</td>
-                                <td>${pr.dailyDosageMg || pr.dailyDosage || ''}</td>
+                                <td>${parseDecimal(pr.dailyDosageMg)}</td>
                                 <td>${parseDecimal(pr.morningTabs)}</td>
                                 <td>${parseDecimal(pr.afternoonTabs)}</td>
                                 <td>${parseDecimal(pr.nightTabs)}</td>
@@ -1248,6 +1253,67 @@ function verDetallePaciente(id) {
         `;
     }
     new bootstrap.Modal('#modalDetallePaciente').show();
+}
+
+/* Nuevo medicamento en stock */
+function abrirModalNuevoMed() {
+    document.getElementById('med-nombre').value = '';
+    document.getElementById('med-strength').value = '';
+    document.getElementById('med-stock').value = '';
+    new bootstrap.Modal('#modalNuevoMed').show();
+}
+async function guardarNuevoMed() {
+    const name = document.getElementById('med-nombre').value.trim();
+    const strength = document.getElementById('med-strength').value.trim();
+    const stock = parseDecimal(document.getElementById('med-stock').value);
+
+    if (!name) {
+        alert('El nombre es obligatorio');
+        return;
+    }
+
+    const nuevo = {
+        name,
+        strength,
+        mgPerUnit: null,
+        stock: Number.isNaN(stock) ? 0 : stock,
+        stockHistory: []
+    };
+
+    if (!modoOffline) {
+        const resp = await fetch(URL_BASE + '/' + RES_MEDS, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(nuevo)
+        });
+        const creado = await resp.json();
+        nuevo.id = creado.id;
+    } else {
+        nuevo.id = 'local-med-' + Date.now();
+    }
+
+    listadoMeds.push(nuevo);
+    persistirLocal();
+    actualizarDatalistMeds();
+    renderStock();
+
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoMed'));
+    if (modal) modal.hide();
+}
+
+/* Datalist sugerencias de meds */
+function actualizarDatalistMeds() {
+    const dl = document.getElementById('lista-meds-sugeridos');
+    if (!dl) return;
+    const usados = new Set();
+    dl.innerHTML = listadoMeds.map(m => {
+        const nombre = m.name || '';
+        const strength = m.strength || '';
+        const label = strength ? (nombre + ' ' + strength) : nombre;
+        if (!label || usados.has(label.toLowerCase())) return '';
+        usados.add(label.toLowerCase());
+        return '<option value="' + label + '"></option>';
+    }).join('');
 }
 
 iniciar();
