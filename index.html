@@ -236,6 +236,11 @@
             <span class="icono">📜</span>
             <span>Ver historial</span>
         </button>
+        <hr class="border-secondary my-2">
+        <button class="btn acciones-stock-btn w-100" id="btn-accion-borrar-med" style="background-color: #7f1d1d; border-color: #7f1d1d; color: #fecaca;">
+            <span class="icono">🗑</span>
+            <span>Eliminar medicamento</span>
+        </button>
       </div>
     </div>
   </div>
@@ -748,11 +753,15 @@ function inicializarModalAccionesStock() {
     const btnAgregar = document.getElementById('btn-accion-agregar');
     const btnDescontar = document.getElementById('btn-accion-descontar');
     const btnHistorial = document.getElementById('btn-accion-historial');
+    const btnBorrar = document.getElementById('btn-accion-borrar-med'); // <--- NUEVO
 
-    [btnEditar, btnAgregar, btnDescontar, btnHistorial].forEach(btn => {
-        btn.addEventListener('touchstart', () => btn.classList.add('is-active-touch'), {passive:true});
-        btn.addEventListener('touchend', () => btn.classList.remove('is-active-touch'));
-        btn.addEventListener('touchcancel', () => btn.classList.remove('is-active-touch'));
+    // Agregamos el efecto touch a todos
+    [btnEditar, btnAgregar, btnDescontar, btnHistorial, btnBorrar].forEach(btn => {
+        if(btn) { // Verificamos que exista para no romper nada
+            btn.addEventListener('touchstart', () => btn.classList.add('is-active-touch'), {passive:true});
+            btn.addEventListener('touchend', () => btn.classList.remove('is-active-touch'));
+            btn.addEventListener('touchcancel', () => btn.classList.remove('is-active-touch'));
+        }
     });
 
     btnEditar.addEventListener('click', function() {
@@ -779,6 +788,16 @@ function inicializarModalAccionesStock() {
         if (modal) modal.hide();
         if (id) verHistorialStock(id);
     });
+    
+    // --- NUEVO LISTENER ---
+    if(btnBorrar) {
+        btnBorrar.addEventListener('click', function() {
+            const id = medAccionesActualId;
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalAccionesStock'));
+            if (modal) modal.hide();
+            if (id) eliminarMedStock(id);
+        });
+    }
 }
 function abrirAccionesStock(id) {
     medAccionesActualId = id;
@@ -910,6 +929,35 @@ function verHistorialStock(id) {
             '</div>';
     }
     new bootstrap.Modal('#modalHistorialStock').show();
+}
+
+/* --- NUEVA FUNCION PARA BORRAR MEDICAMENTO --- */
+async function eliminarMedStock(id) {
+    const med = listadoMeds.find(m => m.id == id);
+    if (!med) return;
+
+    // Confirmación de seguridad
+    if (!confirm('ATENCIÓN: ¿Estás seguro de ELIMINAR "' + med.name + '" del inventario?\n\nEsta acción no se puede deshacer y perderás el historial de este medicamento.')) {
+        return;
+    }
+
+    // 1. Eliminar de la lista local
+    listadoMeds = listadoMeds.filter(m => m.id != id);
+
+    // 2. Eliminar de la API (si hay internet)
+    if (!modoOffline) {
+        try {
+            await fetch(URL_BASE + '/' + RES_MEDS + '/' + id, { method: 'DELETE' });
+        } catch (e) {
+            console.error('Error borrando en API:', e);
+            alert('Se borró localmente, pero hubo error con la API.');
+        }
+    }
+
+    // 3. Guardar y actualizar vista
+    persistirLocal();
+    renderStock();
+    actualizarDatalistMeds(); // Actualizamos las sugerencias del buscador
 }
 
 /* Carrito */
