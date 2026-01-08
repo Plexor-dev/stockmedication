@@ -131,7 +131,18 @@
 
 <nav class="navbar navbar-dark mb-4 p-3">
     <div class="container d-flex justify-content-between">
-        <span class="navbar-brand">🏥 Control Stock - Buenos Aires</span>
+        <span class="navbar-brand">🏥 Control Stock - Los logros</span>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-warning" onclick="mostrarAyuda()" title="Guía de uso">
+            <span>❓</span> Ayuda
+        </button>
+        <button class="btn btn-outline-success" onclick="descargarPacientesCSV()" title="Descargar Excel (CSV)">
+        <span>📊</span> CSV
+    </button>
+        <button class="btn btn-outline-info" onclick="descargarDatosJSON()" title="Descargar Backup JSON">
+        <span>📥</span> Exportar
+    </button>
+    </div>
         <div id="status-indicator" class="text-white small">Cargando...</div>
     </div>
 </nav>
@@ -341,11 +352,15 @@
       </div>
       <div class="modal-body">
         <input type="text" id="med-nombre" class="form-control mb-2" placeholder="Nombre (droga)">
-        <input type="text" id="med-strength" class="form-control mb-2" placeholder="Presentación (ej. 100)">
+        <input type="text" id="med-strength" class="form-control mb-2" placeholder="Presentación (ej. 100 mg)">
         <input type="number" min="0" id="med-stock" class="form-control mb-2" placeholder="Stock inicial (comprimidos)">
+        <label class="small text-muted mb-1">Consumo diario manual (opcional):</label>
+        <input type="number" step="0.01" min="0" id="med-manual-consumption" class="form-control mb-2" placeholder="Ej: 2.5 (deja vacío para auto-calcular)">
+        <p class="small text-muted" style="font-size: 0.75rem;">Si ingresas un valor aquí, se usará este en lugar de sumar lo de los pacientes.</p>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-success w-100" type="button" onclick="guardarNuevoMed()">Guardar</button>
+      <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button" class="btn btn-primary" onclick="guardarNuevoMed()">Guardar Medicamento</button>
       </div>
     </div>
   </div>
@@ -421,14 +436,9 @@ if ('serviceWorker' in navigator) {
 function parseDecimal(value) {
     if (value === null || value === undefined || value === '') return 0;
     if (typeof value === 'number') return value;
-    
-    // 1. Convertir a string y quitar espacios inicio/fin
-    let s = String(value).trim();
-    
-    // 2. Reemplazar TODAS las comas por puntos (Regex global)
-    s = s.replace(/,/g, '.');
-    
-    // 3. Validar que sea número
+    // Elimina cualquier cosa que no sea número, punto o coma, 
+    // luego cambia coma por punto y limpia espacios.
+    const s = String(value).replace(/[^0-9.,]/g, '').replace(',', '.').trim();
     const n = parseFloat(s);
     return Number.isNaN(n) ? 0 : n;
 }
@@ -702,39 +712,38 @@ function renderPacientesPlanilla() {
 }
 
 /* Stock */
+/* Reemplaza la función completa con este bloque */
 function calcularConsumoCompPorMed(m) {
-    // Normalizamos nombre y presentación del stock
-    const nombreStock = (m.name || '').trim().toLowerCase();
-    const fuerzaStock = String(m.strength || '').trim().toLowerCase();
+    if (!m) return 0;
+
+    // Si el usuario ingresó un consumo manual, priorizamos ese
+    if (m.manualConsumption !== undefined && m.manualConsumption !== null && m.manualConsumption !== '') {
+        return parseDecimal(m.manualConsumption);
+    }
+
+    // Si no hay manual, procedemos con el cálculo automático de pacientes
+    const medNombreS = (m.name || '').trim().toLowerCase();
+    const medFuerzaS = String(m.strength || '').trim().toLowerCase();
 
     const consumoTotal = listadoPats.reduce((acc, p) => {
         const sumaPaciente = (p.prescriptions || []).reduce((subAcc, pr) => {
-            // Si es temporaria no descuenta (según tu lógica)
             if (pr.isTemporary) return subAcc;
+            const medNombreP = (pr.medName || '').trim().toLowerCase();
+            const medFuerzaP = String(pr.strength || '').trim().toLowerCase();
 
-            // Normalizamos nombre y presentación del paciente
-            const nombreP = (pr.medName || '').trim().toLowerCase();
-            const fuerzaP = String(pr.strength || '').trim().toLowerCase();
-
-            // Comparación robusta (sin espacios extra)
-            if (nombreP !== nombreStock || fuerzaP !== fuerzaStock) {
+            if (medNombreP !== medNombreS || medFuerzaP !== medFuerzaS) {
                 return subAcc;
             }
 
-            // Sumamos las pastillas
-            const mTabs = parseDecimal(pr.morningTabs);
-            const aTabs = parseDecimal(pr.afternoonTabs);
-            const nTabs = parseDecimal(pr.nightTabs);
-            
-            return subAcc + mTabs + aTabs + nTabs;
+            const totalTabsPrescripcion = parseDecimal(pr.morningTabs) + parseDecimal(pr.afternoonTabs) + parseDecimal(pr.nightTabs);
+            return subAcc + totalTabsPrescripcion;
         }, 0);
         return acc + sumaPaciente;
     }, 0);
 
-    // TRUCO MATEMÁTICO: Redondeamos a 2 decimales para evitar "0.300000004"
-    // Esto asegura que 0.25 + 0.75 sea 1.00 clavado.
     return Math.round(consumoTotal * 100) / 100;
 }
+
 function renderStock() {
     const tabla = document.getElementById('tabla-stock');
     tabla.innerHTML = listadoMeds.map(m => {
@@ -836,29 +845,61 @@ function abrirAccionesStock(id) {
 async function editStock(id) {
     const med = listadoMeds.find(x => x.id == id);
     if (!med) return;
-    const actual = parseDecimal(med.stock);
-    const val = prompt('Nuevo stock total (comprimidos):', actual);
-    if (val === null) return;
-    const nuevoStock = parseDecimal(val);
+
+    // 1. Pedir Nombre
+    const nuevoNombre = prompt('Editar nombre del medicamento:', med.name);
+    if (nuevoNombre === null) return;
+
+    // 2. Pedir Presentación
+    const nuevaStrength = prompt('Editar presentación (ej: 2mg):', med.strength);
+    if (nuevaStrength === null) return;
+
+    // 3. Pedir Stock (manteniendo tu lógica original)
+    const actualStock = parseDecimal(med.stock);
+    const valStock = prompt('Nuevo stock total (comprimidos):', actualStock);
+    if (valStock === null) return;
+
+    const nuevoStock = parseDecimal(valStock);
     if (Number.isNaN(nuevoStock) || nuevoStock < 0) return;
-    const cambio = nuevoStock - actual;
+
+    const valConsumo = prompt('Consumo diario (deja vacío para auto-calcular desde pacientes):', med.manualConsumption || '');
+if (valConsumo !== null) {
+    med.manualConsumption = valConsumo === '' ? null : parseDecimal(valConsumo);
+}
+
+    // Calculamos el cambio para el historial
+    const cambio = nuevoStock - actualStock;
+
+    // Actualizamos el objeto con TODO lo nuevo
+    med.name = nuevoNombre.trim();
+    med.strength = nuevaStrength.trim();
     med.stock = nuevoStock;
+    
     med.stockHistory = med.stockHistory || [];
     med.stockHistory.push({
         date: new Date().toISOString(),
         change: cambio,
         newStock: nuevoStock,
-        type: 'set'
+        type: 'edit_total' // Cambiamos el tipo para saber que fue una edición completa
     });
+
+    // Guardar en API (Enviamos todo el objeto actualizado para que se guarde nombre y strength)
     if (!modoOffline) {
-        await fetch(URL_BASE + '/' + RES_MEDS + '/' + id, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ stock: nuevoStock, stockHistory: med.stockHistory })
-        });
+        try {
+            await fetch(URL_BASE + '/' + RES_MEDS + '/' + id, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(med) 
+            });
+        } catch (e) {
+            console.error("Error al sincronizar:", e);
+        }
     }
+
     persistirLocal();
     renderStock();
+    renderPacientesPlanilla(); // IMPORTANTE: Refresca la tabla de pacientes para vincular los nombres nuevos
+    actualizarDatalistMeds();   // Actualiza las sugerencias del buscador
 }
 async function addStock(id) {
     const med = listadoMeds.find(x => x.id == id);
@@ -1085,48 +1126,44 @@ function nuevaFila(
     const idx = cont.children.length;
     const fila = document.createElement('div');
     fila.className = 'border rounded-3 p-2 mb-2';
-    fila.innerHTML = `
-        <div class="row g-2 align-items-end">
-            <div class="col-4">
-                <label class="form-label small">Droga</label>
-                <input type="text"
-                       class="form-control in-medName"
-                       list="lista-meds-sugeridos"
-                       value="${n}">
-            </div>
-            <div class="col-3">
-                <label class="form-label small">Presentación</label>
-                <input type="text" class="form-control in-strength" value="${strength}">
-            </div>
-            <div class="col-3">
-                <label class="form-label small">Dosis (mg/comp.)</label>
-                <input type="number" step="any" class="form-control in-dosisComp" value="${dosisComp}">
-            </div>
-            <div class="col-2">
-                <label class="form-label small">Mañana</label>
-                <input type="number" step="0.01" class="form-control in-mTabs" value="${mTabs}" placeholder="0">
-            </div>
-            <div class="col-2">
-                <label class="form-label small">Tarde</label>
-                <input type="number" step="0.01" class="form-control in-aTabs" value="${aTabs}" placeholder="0">
-            </div>
-            <div class="col-2">
-                <label class="form-label small">Noche</label>
-                <input type="number" step="0.01" class="form-control in-nTabs" value="${nTabs}" placeholder="0">
-            </div>
-            <div class="col-2">
-                <div class="form-check mt-4">
-                    <input class="form-check-input in-temp" type="checkbox" ${isTemp ? 'checked' : ''} id="temp-${idx}">
-                    <label class="form-check-label small" for="temp-${idx}">
-                        Temporaria
-                    </label>
-                </div>
-            </div>
-            <div class="col-12 text-end">
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarFila(this)">Quitar</button>
+// Dentro de la función nuevaFila...
+fila.innerHTML = `
+    <div class="row g-2 align-items-end">
+        <div class="col-4">
+            <label class="form-label small">Droga</label>
+            <input type="text" class="form-control in-medName" list="lista-meds-sugeridos" value="${n}">
+        </div>
+        <div class="col-3">
+            <label class="form-label small">Presentación</label>
+            <input type="text" class="form-control in-strength" value="${strength}">
+        </div>
+        <div class="col-3">
+            <label class="form-label small">Dosis (mg/comp.)</label>
+            <input type="number" step="any" class="form-control in-dosisComp" value="${dosisComp}">
+        </div>
+        <div class="col-2">
+            <label class="form-label small">Mañana</label>
+            <input type="number" step="0.01" class="form-control in-mTabs" value="${mTabs}" placeholder="0">
+        </div>
+        <div class="col-2">
+            <label class="form-label small">Tarde</label>
+            <input type="number" step="0.01" class="form-control in-aTabs" value="${aTabs}" placeholder="0">
+        </div>
+        <div class="col-2">
+            <label class="form-label small">Noche</label>
+            <input type="number" step="0.01" class="form-control in-nTabs" value="${nTabs}" placeholder="0">
+        </div>
+        <div class="col-2">
+            <div class="form-check mt-4">
+                <input class="form-check-input in-temp" type="checkbox" ${isTemp ? 'checked' : ''} id="temp-${idx}">
+                <label class="form-check-label small" for="temp-${idx}">Temporaria</label>
             </div>
         </div>
-    `;
+        <div class="col-12 text-end">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarFila(this)">Quitar</button>
+        </div>
+    </div>
+`;
     cont.appendChild(fila);
 }
 function eliminarFila(btn) {
@@ -1149,6 +1186,8 @@ async function guardarPaciente() {
 
         if (!nombre) {
             alert('El nombre es obligatorio');
+            btn.disabled = false;
+            btn.innerHTML = textoOriginal;
             return;
         }
 
@@ -1157,32 +1196,31 @@ async function guardarPaciente() {
 
         document.querySelectorAll('#lista-prescripciones > div').forEach(div => {
             const medName = div.querySelector('.in-medName').value.trim();
-            const strength = div.querySelector('.in-strength').value.trim();
-            const dosisComp = parseDecimal(div.querySelector('.in-dosisComp').value.trim());
-            const mTabs = parseDecimal(div.querySelector('.in-mTabs').value.trim());
-            const aTabs = parseDecimal(div.querySelector('.in-aTabs').value.trim());
-            const nTabs = parseDecimal(div.querySelector('.in-nTabs').value.trim());
+            const strength = div.querySelector('.in-strength').value.trim(); // "2mg"
+            const dosisComp = parseDecimal(div.querySelector('.in-dosisComp').value);
+            const mTabs = parseDecimal(div.querySelector('.in-mTabs').value);
+            const aTabs = parseDecimal(div.querySelector('.in-aTabs').value);
+            const nTabs = parseDecimal(div.querySelector('.in-nTabs').value);
             const isTemp = div.querySelector('.in-temp').checked;
 
-            if (!medName && !dosisComp) return;
+            if (!medName) return;
 
-            const totalTabsDia = mTabs + aTabs + nTabs;
+            // REDONDEO CRÍTICO AQUÍ: Asegura que 0.25 + 0.75 sea 1 exacto al guardar
+            const totalTabsDia = Math.round((mTabs + aTabs + nTabs) * 100) / 100;
             const dailyDosageMg = dosisComp * totalTabsDia;
 
             pres.push({
-                medName,
-                strength,
+                medName: medName,
+                strength: strength, // Guardamos la presentación (ej: 2mg)
                 dosisPorComprimidoMg: dosisComp,
-                dailyDosageMg,
+                dailyDosageMg: dailyDosageMg,
                 morningTabs: mTabs,
                 afternoonTabs: aTabs,
                 nightTabs: nTabs,
                 isTemporary: isTemp
             });
 
-            if (medName) {
-                medsNuevos.push({ name: medName, strength });
-            }
+            medsNuevos.push({ name: medName, strength: strength });
         });
 
         const payload = {
@@ -1195,14 +1233,15 @@ async function guardarPaciente() {
 
         if (id) {
             const idx = listadoPats.findIndex(p => p.id == id);
-            if (idx === -1) return;
-            listadoPats[idx] = { ...listadoPats[idx], ...payload };
-            if (!modoOffline) {
-                await fetch(URL_BASE + '/' + RES_PATS + '/' + id, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(listadoPats[idx])
-                });
+            if (idx !== -1) {
+                listadoPats[idx] = { ...listadoPats[idx], ...payload };
+                if (!modoOffline) {
+                    await fetch(URL_BASE + '/' + RES_PATS + '/' + id, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(listadoPats[idx])
+                    });
+                }
             }
         } else {
             const nuevo = { ...payload };
@@ -1221,7 +1260,6 @@ async function guardarPaciente() {
         }
 
         await asegurarMedsEnStock(medsNuevos);
-
         persistirLocal();
         renderPacientesPlanilla();
         renderStock();
@@ -1230,7 +1268,7 @@ async function guardarPaciente() {
         const modal = bootstrap.Modal.getInstance(document.getElementById('modalPaciente'));
         if (modal) modal.hide();
     } catch (e) {
-        alert('Hubo un problema al guardar. Revisá conexión e intentá de nuevo.');
+        alert('Hubo un problema al guardar.');
         console.error(e);
     } finally {
         btn.disabled = false;
@@ -1340,6 +1378,7 @@ async function guardarNuevoMed() {
     const name = document.getElementById('med-nombre').value.trim();
     const strength = document.getElementById('med-strength').value.trim();
     const stock = parseDecimal(document.getElementById('med-stock').value);
+    const manualCons = document.getElementById('med-manual-consumption').value; // Nuevo
 
     if (!name) {
         alert('El nombre es obligatorio');
@@ -1349,10 +1388,11 @@ async function guardarNuevoMed() {
     const nuevo = {
         name,
         strength,
-        mgPerUnit: null,
         stock: Number.isNaN(stock) ? 0 : stock,
+        manualConsumption: manualCons !== '' ? parseDecimal(manualCons) : null, // Nuevo
         stockHistory: []
     };
+    // ... resto del código de la función (fetch, push, persistir) ...
 
     if (!modoOffline) {
         const resp = await fetch(URL_BASE + '/' + RES_MEDS, {
@@ -1390,7 +1430,176 @@ function actualizarDatalistMeds() {
     }).join('');
 }
 
+// Pega esto en la consola de F12 para debuguear
+listadoMeds.forEach(m => {
+   const consumo = calcularConsumoCompPorMed(m);
+   console.log(`Medicamento: ${m.name}, Consumo calculado: ${consumo}`);
+});
+
+// --- FUNCIÓN PARA DESCARGAR TODA LA DATA EN JSON ---
+function descargarDatosJSON() {
+    // Creamos un objeto que contenga todo: pacientes y stock
+    const dataAConservar = {
+        pacientes: listadoPats,
+        stock: listadoMeds,
+        fecha_exportacion: new Date().toISOString()
+    };
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataAConservar, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "backup_stock_pacientes_" + obtenerFechaSimple() + ".json");
+    document.body.appendChild(downloadAnchorNode); // Requerido para Firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+}
+
+// Función auxiliar para el nombre del archivo
+function obtenerFechaSimple() {
+    const d = new Date();
+    return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+}
+
+// --- DESCARGAR PACIENTES EN CSV (PARA EXCEL) ---
+function descargarPacientesCSV() {
+    if (listadoPats.length === 0) {
+        alert("No hay pacientes para exportar.");
+        return;
+    }
+
+    // Cabeceras de las columnas
+    let csvContent = "Nombre,DNI,Alergias,Medicamentos (Resumen)\n";
+
+    listadoPats.forEach(p => {
+        // Creamos un resumen de sus medicamentos para que quepan en una sola celda
+        const resumenMeds = (p.prescriptions || [])
+            .map(pr => `${pr.medName} (${pr.strength})`)
+            .join(" - ");
+
+        // Limpiamos comas internas para no romper las columnas del CSV
+        const nombre = (p.name || "").replace(/,/g, "");
+        const dni = (p.dni || "").replace(/,/g, "");
+        const alergias = (p.allergies || "").replace(/,/g, "");
+
+        csvContent += `"${nombre}","${dni}","${alergias}","${resumenMeds}"\n`;
+    });
+
+    // El "BOM" (\uFEFF) sirve para que Excel reconozca tildes y eñes correctamente
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "lista_pacientes_" + obtenerFechaSimple() + ".csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// --- DESCARGAR BACKUP COMPLETO EN JSON ---
+function descargarDatosJSON() {
+    const data = {
+        pacientes: listadoPats,
+        stock: listadoMeds,
+        exportado: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "backup_sistema_" + obtenerFechaSimple() + ".json";
+    link.click();
+}
+
+// Función auxiliar para el nombre del archivo
+function obtenerFechaSimple() {
+    const d = new Date();
+    return d.toISOString().split('T')[0]; // Devuelve YYYY-MM-DD
+}
+
+function mostrarAyuda() {
+    const modal = new bootstrap.Modal(document.getElementById('modalAyuda'));
+    modal.show();
+}
+
 iniciar();
 </script>
+<div class="modal fade" id="modalAyuda" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content bg-dark text-light border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">❓ Guía de Uso y Control de Dosis</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h6 class="text-warning mb-3">📋 Cómo completar las dosis (Mañana, Tarde, Noche)</h6>
+        <p>Para que el stock se descuente correctamente, utiliza <strong>puntos (.)</strong> para los decimales. Aquí tienes la equivalencia de comprimidos:</p>
+        
+        <div class="table-responsive">
+          <table class="table table-dark table-bordered text-center">
+            <thead>
+              <tr class="table-secondary text-dark">
+                <th>Fracción</th>
+                <th>Número a ingresar</th>
+                <th>Ejemplo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1/4 Comprimido</td>
+                <td><code class="fs-5 text-info">0.25</code></td>
+                <td>Dosis mínima o ajuste.</td>
+              </tr>
+              <tr>
+                <td>1/2 Comprimido</td>
+                <td><code class="fs-5 text-info">0.5</code></td>
+                <td>Media pastilla.</td>
+              </tr>
+              <tr>
+                <td>3/4 Comprimido</td>
+                <td><code class="fs-5 text-info">0.75</code></td>
+                <td>Media pastilla + un cuarto.</td>
+              </tr>
+              <tr>
+                <td>1 Comprimido</td>
+                <td><code class="fs-5 text-info">1</code></td>
+                <td>Pastilla completa.</td>
+              </tr>
+              <tr>
+                <td>1 y 1/2 Comp.</td>
+                <td><code class="fs-5 text-info">1.5</code></td>
+                <td>Pastilla y media.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <hr class="border-secondary">
+
+        <h6 class="text-warning mb-3">⚙️ ¿Cómo funciona la aplicación?</h6>
+        <ul class="list-group list-group-flush bg-dark">
+          <li class="list-group-item bg-dark text-light border-secondary">
+            <strong>1. Stock Físico:</strong> En la sección Inventario, carga la cantidad total de pastillas reales que tienes en la caja.
+          </li>
+          <li class="list-group-item bg-dark text-light border-secondary">
+            <strong>2. Pacientes:</strong> Al crear un paciente, asegúrate de que el nombre del medicamento coincida <u>exactamente</u> con el del Inventario.
+          </li>
+          <li class="list-group-item bg-dark text-light border-secondary">
+            <strong>3. Descuento Automático:</strong> El sistema suma las dosis diarias de todos los pacientes y las resta del stock automáticamente cada día que abres la app.
+          </li>
+          <li class="list-group-item bg-dark text-light border-secondary">
+            <strong>4. Alertas:</strong> 
+            <span class="badge bg-danger">Rojo</span>: Menos de 5 días de stock. <br>
+            <span class="badge bg-warning text-dark">Amarillo</span>: Menos de 10 días de stock.
+          </li>
+        </ul>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Entendido</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
