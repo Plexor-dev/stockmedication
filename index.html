@@ -128,20 +128,45 @@
 
 
         /* Pantalla de bloqueo login */
+/* Nuevo diseño para la pantalla de inicio de sesión */
 #login-overlay {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
-    background-color: #111827;
+    background: radial-gradient(circle, #1f2937 0%, #111827 100%);
     display: flex; align-items: center; justify-content: center;
     z-index: 9999;
+    backdrop-filter: blur(5px);
 }
+
 .login-card {
-    width: 100%; max-width: 350px;
-    padding: 2rem;
+    width: 100%; max-width: 400px;
+    padding: 2.5rem;
     background: #1e1e1e;
-    border-radius: 1.5rem;
-    border: 2px solid #374151;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    border-radius: 2rem;
+    border: 1px solid #374151;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+}
+
+.input-group-text {
+    background-color: #111827;
+    border-color: #4b5563;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.input-group-text:hover {
+    color: #facc15;
+}
+
+.form-check-input:checked {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+/* Ocultar botón test por defecto */
+#btn-test-container {
+    display: none;
 }
     </style>
 </head>
@@ -149,28 +174,60 @@
 
     <div id="login-overlay">
     <div class="login-card text-center">
-        <h4 class="mb-4">🔐 Acceso Privado</h4>
+        <div class="mb-4">
+            <span style="font-size: 3rem;">🔐</span>
+            <h4 class="mt-2 fw-bold">Acceso al Sistema</h4>
+            <p class="text-muted small">Por favor, introduce tus credenciales</p>
+        </div>
+        
         <div class="mb-3 text-start">
-            <label class="form-label small">Usuario</label>
-            <input type="text" id="user-input" class="form-control" placeholder="Nombre de usuario">
+            <label for="user-input" class="form-label small fw-semibold text-secondary">Usuario</label>
+            <input type="text" id="user-input" class="form-control" placeholder="Ej: Administrador">
         </div>
-        <div class="mb-4 text-start">
-            <label class="form-label small">Contraseña</label>
-            <input type="password" id="pass-input" class="form-control" placeholder="••••••••">
+
+        <div class="mb-3 text-start">
+            <label for="pass-input" class="form-label small fw-semibold text-secondary">Contraseña</label>
+            <div class="input-group">
+                <input type="password" id="pass-input" class="form-control" placeholder="Ingresa tu clave">
+                <span class="input-group-text" onclick="togglePassword()">
+                    <span id="eye-icon">👁️</span>
+                </span>
+            </div>
         </div>
-        <button class="btn btn-primary w-100 py-2" onclick="verificarLogin()">Entrar</button>
-        <div id="login-error" class="text-danger small mt-3" style="display:none;">Credenciales incorrectas</div>
+
+        <div class="mb-4 text-start d-flex justify-content-between">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="remember-me">
+                <label class="form-check-label small text-muted" for="remember-me">
+                    Recordar sesión
+                </label>
+            </div>
+        </div>
+
+        <button class="btn btn-primary w-100 py-2 fw-bold" onclick="verificarLogin()">
+            Iniciar Sesión
+        </button>
+
+        <div id="login-error" class="text-danger small mt-3 animate__animated animate__shakeX" style="display:none;">
+            ⚠️ Credenciales incorrectas
+        </div>
     </div>
 </div>
 
+
+
 <nav class="navbar navbar-dark mb-4 p-3">
     <div class="container d-flex justify-content-between">
-        <span class="navbar-brand">🏥 Control Stock - Los logros</span>
+       <span class="navbar-brand" id="titulo-secreto" style="cursor: default; user-select: none;">
+    🏥 Control Stock - Los logros
+</span>
     <div class="d-flex gap-2">
-        <button class="btn btn-outline-danger" onclick="abrirSimuladorTiempo()" title="Simular paso del tiempo">
-        <span>⏳</span> Test
-        </button>
-        <button class="btn btn-outline-warning" onclick="mostrarAyuda()" title="Guía de uso">
+            <div id="btn-test-container">
+                <button class="btn btn-outline-danger" onclick="abrirSimuladorTiempo()" title="Simular paso del tiempo">
+                    <span>⏳</span> Test
+                </button>
+                </div>
+             <button class="btn btn-outline-warning" onclick="mostrarAyuda()" title="Guía de uso">
             <span>❓</span> Ayuda
         </button>
         <button class="btn btn-outline-success" onclick="descargarPacientesCSV()" title="Descargar Excel (CSV)">
@@ -416,16 +473,34 @@ const CREDENCIALES = {
 };
 
 // Función de verificación
+// Función para mostrar/ocultar contraseña
+function togglePassword() {
+    const passInput = document.getElementById('pass-input');
+    const eyeIcon = document.getElementById('eye-icon');
+    if (passInput.type === "password") {
+        passInput.type = "text";
+        eyeIcon.innerText = "🙈"; // Cambia el icono
+    } else {
+        passInput.type = "password";
+        eyeIcon.innerText = "👁️";
+    }
+}
+
+// Función de verificación actualizada
 function verificarLogin() {
     const u = document.getElementById('user-input').value;
     const p = document.getElementById('pass-input').value;
+    const remember = document.getElementById('remember-me').checked;
     const errorDiv = document.getElementById('login-error');
 
     if (u === CREDENCIALES.user && p === CREDENCIALES.pass) {
-        // Guardar sesión en sessionStorage (se borra al cerrar la pestaña)
-        sessionStorage.setItem('auth_stock_ba', 'true');
+        // Si "Recordar" está marcado, usamos localStorage (persiste al cerrar navegador)
+        // Si no, usamos sessionStorage (se borra al cerrar)
+        const storage = remember ? localStorage : sessionStorage;
+        storage.setItem('auth_stock_ba', 'true');
+        
         document.getElementById('login-overlay').style.display = 'none';
-        iniciar(); // Solo arranca la carga de datos si el login es exitoso
+        iniciar();
     } else {
         errorDiv.style.display = 'block';
         setTimeout(() => { errorDiv.style.display = 'none'; }, 3000);
@@ -447,50 +522,8 @@ let medAccionesActualId = null;
 let filtroPacientes = '';
 let pacienteArrastradoId = null;
 
-/* SW básico */
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        const swCode = `
-            const CACHE_NAME = 'stock-ba-v1';
-            const OFFLINE_URLS = ['./'];
 
-            self.addEventListener('install', event => {
-                event.waitUntil(
-                    caches.open(CACHE_NAME).then(cache => cache.addAll(OFFLINE_URLS))
-                );
-                self.skipWaiting();
-            });
 
-            self.addEventListener('activate', event => {
-                event.waitUntil(
-                    caches.keys().then(keys =>
-                        Promise.all(
-                            keys.map(k => k !== CACHE_NAME && caches.delete(k))
-                        )
-                    )
-                );
-                self.clients.claim();
-            });
-
-            self.addEventListener('fetch', event => {
-                event.respondWith(
-                    caches.match(event.request).then(response => {
-                        return response || fetch(event.request).then(netRes => {
-                            const resClone = netRes.clone();
-                            caches.open(CACHE_NAME).then(cache => {
-                                cache.put(event.request, resClone);
-                            });
-                            return netRes;
-                        }).catch(() => response);
-                    })
-                );
-            });
-        `;
-        const blob = new Blob([swCode], { type: 'text/javascript' });
-        const swUrl = URL.createObjectURL(blob);
-        navigator.serviceWorker.register(swUrl).catch(console.error);
-    });
-}
 
 /* Utils */
 /* Utils: Corrección de decimales */
@@ -1645,14 +1678,36 @@ async function aplicarFechaSimulada() {
         alert("Simulación completada. Se descontó el consumo de " + diasPasados + " días.");
     }
 }
-
-    // En lugar de llamar a iniciar() directamente, chequeamos la sesión:
-        window.onload = () => {
-        if (sessionStorage.getItem('auth_stock_ba') === 'true') {
+//iniciar onload
+window.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('auth_stock_ba') === 'true' || 
+        sessionStorage.getItem('auth_stock_ba') === 'true') {
         document.getElementById('login-overlay').style.display = 'none';
         iniciar();
+    }
+});
+
+        let contadorClicsTest = 0;
+const areaSecreta = document.getElementById('area-clic-secreta');
+const contenedorTest = document.getElementById('btn-test-container');
+
+if (areaSecreta) {
+    areaSecreta.addEventListener('click', () => {
+        contadorClicsTest++;
+        
+        // Si llega a 5 clics, muestra el botón
+        if (contadorClicsTest === 5) {
+            contenedorTest.style.display = 'block';
+            // Opcional: un pequeño aviso visual o log
+            console.log("Modo Test activado");
         }
-        };
+    });
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js')
+    .catch(err => console.log("Error al registrar SW", err));
+}
 
 </script>
 <div class="modal fade" id="modalAyuda" tabindex="-1" aria-hidden="true">
@@ -1750,6 +1805,18 @@ async function aplicarFechaSimulada() {
     </div>
   </div>
 </div>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      // Registramos un Service Worker vacío para eliminar errores de consola
+      const swCode = "self.addEventListener('fetch', function(event) {});";
+      const blob = new Blob([swCode], {type: 'text/javascript'});
+      const swUrl = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(swUrl).catch(err => console.log('SW error omitido'));
+    });
+  }
+</script>
 
 </body>
 </html>
