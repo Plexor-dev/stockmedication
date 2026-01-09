@@ -125,14 +125,51 @@
         .btn-accion-historial:hover { background-color:#111827; }
         .btn-accion-paciente { font-weight:500; border-radius:999px; }
         .btn-accion-paciente:focus-visible { outline:3px solid #facc15; outline-offset:2px; }
+
+
+        /* Pantalla de bloqueo login */
+#login-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: #111827;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+}
+.login-card {
+    width: 100%; max-width: 350px;
+    padding: 2rem;
+    background: #1e1e1e;
+    border-radius: 1.5rem;
+    border: 2px solid #374151;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
     </style>
 </head>
 <body>
+
+    <div id="login-overlay">
+    <div class="login-card text-center">
+        <h4 class="mb-4">🔐 Acceso Privado</h4>
+        <div class="mb-3 text-start">
+            <label class="form-label small">Usuario</label>
+            <input type="text" id="user-input" class="form-control" placeholder="Nombre de usuario">
+        </div>
+        <div class="mb-4 text-start">
+            <label class="form-label small">Contraseña</label>
+            <input type="password" id="pass-input" class="form-control" placeholder="••••••••">
+        </div>
+        <button class="btn btn-primary w-100 py-2" onclick="verificarLogin()">Entrar</button>
+        <div id="login-error" class="text-danger small mt-3" style="display:none;">Credenciales incorrectas</div>
+    </div>
+</div>
 
 <nav class="navbar navbar-dark mb-4 p-3">
     <div class="container d-flex justify-content-between">
         <span class="navbar-brand">🏥 Control Stock - Los logros</span>
     <div class="d-flex gap-2">
+        <button class="btn btn-outline-danger" onclick="abrirSimuladorTiempo()" title="Simular paso del tiempo">
+        <span>⏳</span> Test
+        </button>
         <button class="btn btn-outline-warning" onclick="mostrarAyuda()" title="Guía de uso">
             <span>❓</span> Ayuda
         </button>
@@ -371,6 +408,30 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+
+    // Credenciales solicitadas
+const CREDENCIALES = {
+    user: "Loslogros1987",
+    pass: "Lezica881luzuriaga"
+};
+
+// Función de verificación
+function verificarLogin() {
+    const u = document.getElementById('user-input').value;
+    const p = document.getElementById('pass-input').value;
+    const errorDiv = document.getElementById('login-error');
+
+    if (u === CREDENCIALES.user && p === CREDENCIALES.pass) {
+        // Guardar sesión en sessionStorage (se borra al cerrar la pestaña)
+        sessionStorage.setItem('auth_stock_ba', 'true');
+        document.getElementById('login-overlay').style.display = 'none';
+        iniciar(); // Solo arranca la carga de datos si el login es exitoso
+    } else {
+        errorDiv.style.display = 'block';
+        setTimeout(() => { errorDiv.style.display = 'none'; }, 3000);
+    }
+}
+
 const URL_BASE = 'https://695f043a7f037703a81290ad.mockapi.io/api/v1';
 const RES_MEDS = 'Medications';
 const RES_PATS = 'Patients';
@@ -1522,7 +1583,77 @@ function mostrarAyuda() {
     modal.show();
 }
 
-iniciar();
+
+function abrirSimuladorTiempo() {
+    // Ponemos por defecto la fecha de mañana en el input
+    const mañana = new Date();
+    mañana.setDate(mañana.getDate() + 1);
+    document.getElementById('simular-fecha-input').value = mañana.toISOString().substring(0,10);
+    new bootstrap.Modal('#modalSimulador').show();
+}
+
+async function aplicarFechaSimulada() {
+    const nuevaFechaStr = document.getElementById('simular-fecha-input').value;
+    if (!nuevaFechaStr) return;
+
+    const ultima = localStorage.getItem(DAILY_KEY);
+    if (!ultima) {
+        alert("Primero debe haber un registro de hoy. Recarga la página normalmente.");
+        return;
+    }
+
+    const dUltima = new Date(ultima + 'T00:00:00');
+    const dSimulada = new Date(nuevaFechaStr + 'T00:00:00');
+
+    const diffMs = dSimulada.getTime() - dUltima.getTime();
+    const diasPasados = Math.floor(diffMs / (1000*60*60*24));
+
+    if (diasPasados <= 0) {
+        alert("Elige una fecha posterior a la última actualización (" + ultima + ")");
+        return;
+    }
+
+    if (confirm(`¿Simular el paso de ${diasPasados} día(s)? Se descontará stock de todos los medicamentos.`)) {
+        // Ejecutamos la lógica de descuento
+        listadoMeds.forEach(m => {
+            const consumo = calcularConsumoCompPorMed(m);
+            if (consumo <= 0) return;
+            
+            const stockActual = parseDecimal(m.stock);
+            const descuento = consumo * diasPasados;
+            const nuevoStock = Math.max(0, stockActual - descuento);
+            const cambio = nuevoStock - stockActual;
+
+            if (cambio !== 0) {
+                m.stock = nuevoStock;
+                m.stockHistory = m.stockHistory || [];
+                m.stockHistory.push({
+                    date: new Date().toISOString(),
+                    change: cambio,
+                    newStock: nuevoStock,
+                    type: 'auto-day'
+                });
+            }
+        });
+
+        // Actualizamos la fecha de "última vez" a la fecha simulada
+        localStorage.setItem(DAILY_KEY, nuevaFechaStr);
+        persistirLocal();
+        renderizar();
+        
+        bootstrap.Modal.getInstance(document.getElementById('modalSimulador')).hide();
+        alert("Simulación completada. Se descontó el consumo de " + diasPasados + " días.");
+    }
+}
+
+    // En lugar de llamar a iniciar() directamente, chequeamos la sesión:
+        window.onload = () => {
+        if (sessionStorage.getItem('auth_stock_ba') === 'true') {
+        document.getElementById('login-overlay').style.display = 'none';
+        iniciar();
+        }
+        };
+
 </script>
 <div class="modal fade" id="modalAyuda" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
@@ -1596,6 +1727,25 @@ iniciar();
       </div>
       <div class="modal-footer border-secondary">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Entendido</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalSimulador" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content border-danger">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">Simulador de Fecha</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <label class="small mb-2">Simular que hoy es:</label>
+        <input type="date" id="simular-fecha-input" class="form-control mb-3">
+        <p class="text-muted" style="font-size: 0.7rem;">
+            Al cambiar la fecha, el sistema detectará los días transcurridos desde la última vez y descontará el stock proporcionalmente.
+        </p>
+        <button class="btn btn-danger w-100" onclick="aplicarFechaSimulada()">Aplicar Salto Temporal</button>
       </div>
     </div>
   </div>
