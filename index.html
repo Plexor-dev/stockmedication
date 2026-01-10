@@ -1679,13 +1679,123 @@ async function aplicarFechaSimulada() {
     }
 }
 //iniciar onload
-window.addEventListener('DOMContentLoaded', () => {
+// --- INICIO PARCHE DE TIEMPO DEFINITIVO ---
+function sincronizarStockConTiempo() {
+    // 1. Definimos HOY usando hora local (Argentina), no UTC para evitar errores de zona horaria
+    const ahora = new Date();
+    // Truco para obtener YYYY-MM-DD en hora local
+    const hoyLocal = new Date(ahora.getTime() - (ahora.getTimezoneOffset() * 60000))
+                        .toISOString().split('T')[0];
+
+    const CLAVE_DB_MEDS = 'local_meds';
+    const CLAVE_DB_PATS = 'local_pats';
+    const CLAVE_FECHA = 'ultima_actualizacion_stock';
+
+    let fechaGuardada = localStorage.getItem(CLAVE_FECHA);
+
+    // Si ya se actualizó hoy, no hacemos nada
+    if (fechaGuardada === hoyLocal) return;
+
+    console.log("Detectando cambio de día...");
+
+    // Cargar datos manualmente porque 'iniciar()' aún no corrió
+    let inventario = JSON.parse(localStorage.getItem(CLAVE_DB_MEDS)) || [];
+    let pacientes = JSON.parse(localStorage.getItem(CLAVE_DB_PATS)) || [];
+
+    // Si no hay fecha guardada, asumimos que es la primera vez y guardamos hoy
+    if (!fechaGuardada) {
+        localStorage.setItem(CLAVE_FECHA, hoyLocal);
+        return;
+    }
+
+    // Calcular días pasados
+    const dUltima = new Date(fechaGuardada + 'T00:00:00');
+    const dHoy = new Date(hoyLocal + 'T00:00:00');
+    const diff = dHoy - dUltima;
+    const diasPasados = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+    if (diasPasados > 0) {
+        console.log(`Pasaron ${diasPasados} días. Descontando stock...`);
+        let huboCambios = false;
+
+        inventario = inventario.map(med => {
+            // LÓGICA DE CÁLCULO COPIADA DE TU SISTEMA (Adaptada)
+            // Calculamos cuánto consumen los pacientes de este medicamento
+            const medNombreS = (med.name || '').trim().toLowerCase();
+            const medFuerzaS = String(med.strength || '').trim().toLowerCase();
+            
+            let consumoDiario = 0;
+
+            // Prioridad: Consumo manual si existe
+            if (med.manualConsumption) {
+                consumoDiario = parseFloat(med.manualConsumption);
+            } else {
+                // Cálculo automático basado en pacientes
+                consumoDiario = pacientes.reduce((acc, p) => {
+                    const sumaPaciente = (p.prescriptions || []).reduce((subAcc, pr) => {
+                        if (pr.isTemporary) return subAcc;
+                        const medNombreP = (pr.medName || '').trim().toLowerCase();
+                        const medFuerzaP = String(pr.strength || '').trim().toLowerCase();
+                        
+                        if (medNombreP === medNombreS && medFuerzaP === medFuerzaS) {
+                            // Sumamos mañana + tarde + noche
+                            return subAcc + (parseFloat(pr.morningTabs)||0) + (parseFloat(pr.afternoonTabs)||0) + (parseFloat(pr.nightTabs)||0);
+                        }
+                        return subAcc;
+                    }, 0);
+                    return acc + sumaPaciente;
+                }, 0);
+            }
+
+            // Aplicar descuento si hay consumo
+            if (consumoDiario > 0) {
+                const aDescontar = consumoDiario * diasPasados;
+                const stockActual = parseFloat(med.stock) || 0;
+                const nuevoStock = Math.max(0, stockActual - aDescontar);
+
+                if (nuevoStock !== stockActual) {
+                    med.stock = nuevoStock;
+                    // Agregamos al historial
+                    med.stockHistory = med.stockHistory || [];
+                    med.stockHistory.push({
+                        date: new Date().toISOString(),
+                        change: (nuevoStock - stockActual),
+                        newStock: nuevoStock,
+                        type: 'auto-day-fix'
+                    });
+                    huboCambios = true;
+                }
+            }
+            return med;
+        });
+
+        if (huboCambios) {
+            localStorage.setItem(CLAVE_DB_MEDS, JSON.stringify(inventario));
+            console.log("Stock actualizado correctamente por paso del tiempo.");
+        }
+        
+        // Actualizamos la fecha para que no vuelva a descontar hoy
+        localStorage.setItem(CLAVE_FECHA, hoyLocal);
+    }
+}
+
+// Reemplazo del Listener original
+window.addEventListener('load', () => {
+    // 1. Ejecutar el parche ANTES de iniciar la app
+    try {
+        sincronizarStockConTiempo();
+    } catch (e) {
+        console.error("Error en sincronización de tiempo:", e);
+    }
+
+    // 2. Lógica de inicio normal
     if (localStorage.getItem('auth_stock_ba') === 'true' || 
         sessionStorage.getItem('auth_stock_ba') === 'true') {
         document.getElementById('login-overlay').style.display = 'none';
         iniciar();
     }
 });
+// --- FIN PARCHE ---
 
         let contadorClicsTest = 0;
 const areaSecreta = document.getElementById('area-clic-secreta');
