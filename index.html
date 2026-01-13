@@ -181,17 +181,17 @@
     font-style: italic;
 }
 .freq-badge {
-    font-size: 0.75rem;
-    padding: 2px 6px;
+    font-size: 0.65rem;
+    padding: 1.5px 5px;
     border-radius: 4px;
     background: #374151;
     color: #e5e7eb;
-    margin-left: 5px;
+    margin-left: 7px;
     display: inline-block;
 }
 .freq-controls {
     background-color: #1f2937;
-    padding: 0.5rem;
+    padding: 0.6rem;
     border-radius: 0.5rem;
     margin-top: 0.5rem;
     border: 1px dashed #4b5563;
@@ -403,7 +403,7 @@
                 <button class="btn btn-primary w-100" id="btn-guardar-paciente" onclick="guardarPaciente()">
                     Guardar Cambios
                 </button>
-                <button type="button" class="btn-close btn-close-red" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
@@ -474,11 +474,11 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <input type="text" id="med-nombre" class="form-control mb-2" placeholder="Nombre (droga)">
-        <input type="text" id="med-strength" class="form-control mb-2" placeholder="Presentación (ej. 100 mg)">
-        <input type="number" min="0" id="med-stock" class="form-control mb-2" placeholder="Stock inicial (comprimidos)">
+        <input type="text" id="med-nombre" class="form-control mb-2 fixed" placeholder="Nombre (droga)">
+        <input type="text" id="med-strength" class="form-control mb-2 fixed" placeholder="Presentación (ej. 100 mg)">
+        <input type="number" min="0" id="med-stock" class="form-control mb-2 fixed" placeholder="Stock inicial (comprimidos)">
         <label class="small text-muted mb-1">Consumo diario manual (opcional):</label>
-        <input type="number" step="0.01" min="0" id="med-manual-consumption" class="form-control mb-2" placeholder="Ej: 2.5 (deja vacío para auto-calcular)">
+        <input type="number" step="0.01" min="0" id="med-manual-consumption" class="form-control mb-2 fixed" placeholder="Ej: 2.5 (deja vacío para auto-calcular)">
         <p class="small text-muted" style="font-size: 0.75rem;">Si ingresas un valor aquí, se usará este en lugar de sumar lo de los pacientes.</p>
       </div>
       <div class="modal-footer border-secondary">
@@ -1268,22 +1268,19 @@ function nuevaFila(
     <div class="row g-2 align-items-end">
         <div class="col-md-4 col-12">
             <label class="form-label small text-secondary">Droga</label>
-            <input type="text" class="form-control in-medName" list="lista-meds-sugeridos" value="${n}" placeholder="Nombre medicamento">
+            <input type="text" class="form-control in-medName fixed" list="lista-meds-sugeridos" value="${n}" placeholder="Nombre medicamento">
         </div>
         <div class="col-md-3 col-6">
             <label class="form-label small text-secondary">Presentación</label>
-            <input type="text" class="form-control in-strength" value="${strength}" placeholder="Ej: 500mg">
+            <input type="text" class="form-control in-strength fixed" value="${strength}" placeholder="Ej: 500mg">
         </div>
         <div class="col-md-3 col-6">
             <label class="form-label small text-secondary">Dosis (mg/comp.)</label>
-            <input type="number" step="any" class="form-control in-dosisComp" value="${dosisComp}">
-        </div>
-        <div class="col-md-2 col-12 text-end">
-             <button type="button" class="btn btn-sm btn-outline-danger mt-4" onclick="eliminarFila(this)">🗑</button>
+            <input type="number" step="any" class="form-control in-dosisComp fixed" value="${dosisComp}">
         </div>
     </div>
     
-    <div class="row g-2 mt-1 align-items-center">
+    <div class="row g-2 mt-1 align-items-center justify-content-center">
         <div class="col-3 col-md-2">
             <label class="form-label small text-center w-100">Mañana</label>
             <input type="number" step="0.01" class="form-control text-center in-mTabs" value="${mTabs}" placeholder="0">
@@ -1296,16 +1293,19 @@ function nuevaFila(
             <label class="form-label small text-center w-100">Noche</label>
             <input type="number" step="0.01" class="form-control text-center in-nTabs" value="${nTabs}" placeholder="0">
         </div>
-        <div class="col-3 col-md-6 d-flex align-items-center justify-content-end gap-2 mt-4">
+        <div class="col-4 col-md-8 d-flex align-items-center justify-content-center gap-2 mt-4">
              <div class="form-check">
                 <input class="form-check-input in-temp" type="checkbox" ${isTemp ? 'checked' : ''} id="temp-${idx}">
                 <label class="form-check-label small" for="temp-${idx}">Temp</label>
             </div>
-            <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#config-${idx}">
+            <button class="btn btn-sm btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#config-${idx}">
                 ⚙️ Frecuencia
             </button>
         </div>
     </div>
+            <div class="col-md-2 col-12 text-end">
+             <button type="button" class="btn btn-sm btn-outline-danger mt-4" onclick="eliminarFila(this)">🗑</button>
+        </div>
 
     <div class="collapse ${freqType !== 'diario' ? 'show' : ''} mt-2" id="config-${idx}">
         <div class="freq-controls">
