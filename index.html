@@ -1302,10 +1302,11 @@ function nuevaFila(
                 ⚙️ Frecuencia
             </button>
         </div>
-    </div>
-            <div class="col-md-2 col-12 text-end">
-             <button type="button" class="btn btn-sm btn-outline-danger mt-4" onclick="eliminarFila(this)">🗑</button>
+        <div class="col-md-2 col-12 text-end">
+             <button type="button" class="btn btn-sm btn-outline-danger mt-4" onclick="eliminarFila(this)">Quitar 🗑</button>
         </div>
+    </div>
+
 
     <div class="collapse ${freqType !== 'diario' ? 'show' : ''} mt-2" id="config-${idx}">
         <div class="freq-controls">
@@ -1869,22 +1870,6 @@ window.addEventListener('load', () => {
 });
 
 
-        let contadorClicsTest = 0;
-const areaSecreta = document.getElementById('area-clic-secreta');
-const contenedorTest = document.getElementById('btn-test-container');
-
-if (areaSecreta) {
-    areaSecreta.addEventListener('click', () => {
-        contadorClicsTest++;
-        
-        // Si llega a 5 clics, muestra el botón
-        if (contadorClicsTest === 5) {
-            contenedorTest.style.display = 'block';
-            // Opcional: un pequeño aviso visual o log
-            console.log("Modo Test activado");
-        }
-    });
-}
 
 // if ('serviceWorker' in navigator) {
 //   navigator.serviceWorker.register('./sw.js')
