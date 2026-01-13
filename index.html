@@ -37,7 +37,7 @@
         .paciente-card { margin-bottom: 1.5rem; border-radius: 1rem; }
         .planilla-inner-table { font-size: 0.9rem; }
         .planilla-inner-table th, .planilla-inner-table td { border-width: 2px !important; }
-        .table-responsive { font-size: 0.9rem; }
+        .table-responsive { font-size: 0.8rem; }
         .stock-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         @media (max-width: 768px) {
             h3 { font-size: 1.1rem; }
@@ -167,6 +167,34 @@
 /* Ocultar botón test por defecto */
 #btn-test-container {
     display: none;
+}
+
+/* --- NUEVOS ESTILOS PARA FRECUENCIAS --- */
+.med-row-hoy {
+    background-color: rgba(22, 163, 74, 0.15) !important; /* Verde suave */
+    border-left: 4px solid #16a34a !important;
+}
+.med-row-descanso {
+    opacity: 0.6;
+    background-color: rgba(55, 65, 81, 0.3); /* Grisáceo */
+    border-left: 4px solid #4b5563 !important;
+    font-style: italic;
+}
+.freq-badge {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #374151;
+    color: #e5e7eb;
+    margin-left: 5px;
+    display: inline-block;
+}
+.freq-controls {
+    background-color: #1f2937;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    margin-top: 0.5rem;
+    border: 1px dashed #4b5563;
 }
     </style>
 </head>
@@ -375,6 +403,7 @@
                 <button class="btn btn-primary w-100" id="btn-guardar-paciente" onclick="guardarPaciente()">
                     Guardar Cambios
                 </button>
+                <button type="button" class="btn-close btn-close-red" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
@@ -764,7 +793,7 @@ function renderPacientesPlanilla() {
               '<button class="btn btn-danger btn-sm btn-accion-paciente" type="button" onclick="eliminarP(\'' + p.id + '\')">🗑 Borrar</button>' +
             '</div>' +
           '</div>' +
-          '<div class="table-responsive rounded-4 overflow-hidden">' +
+          '<div class="table-responsive rounded-4">' +
             '<table class="table table-dark table-sm table-bordered mb-0 planilla-inner-table">' +
               '<thead>' +
                 '<tr>' +
@@ -1196,7 +1225,7 @@ function abrirEdicion(id) {
 
     const cont = document.getElementById('lista-prescripciones');
     cont.innerHTML = '';
-    (p.prescriptions || []).forEach(pr => {
+(p.prescriptions || []).forEach(pr => {
         nuevaFila(
             pr.medName || '',
             pr.dosisPorComprimidoMg || '',
@@ -1204,61 +1233,131 @@ function abrirEdicion(id) {
             pr.morningTabs || '',
             pr.afternoonTabs || '',
             pr.nightTabs || '',
-            !!pr.isTemporary
+            !!pr.isTemporary,
+            pr.freqType || 'diario', // Nuevo
+            pr.freqValue,           // Nuevo
+            pr.startDate            // Nuevo (usamos startDate como lastTaken ref)
         );
     });
     if (!(p.prescriptions || []).length) nuevaFila();
     new bootstrap.Modal('#modalPaciente').show();
 }
 
-/* Nueva fila: dosis = mg/comp. */
 function nuevaFila(
     n = '', dosisComp = '', strength = '',
-    mTabs = '', aTabs = '', nTabs = '', isTemp = false
+    mTabs = '', aTabs = '', nTabs = '', isTemp = false,
+    freqType = 'diario', freqValue = '', lastTaken = '' // Nuevos parámetros
 ) {
     const cont = document.getElementById('lista-prescripciones');
-    const idx = cont.children.length;
+    const idx = Date.now() + Math.random().toString(16).slice(2); // ID único para colapsables
     const fila = document.createElement('div');
-    fila.className = 'border rounded-3 p-2 mb-2';
-// Dentro de la función nuevaFila...
-fila.innerHTML = `
+    fila.className = 'border rounded-3 p-2 mb-2 position-relative';
+    
+    // Lógica para mostrar/ocultar inputs según tipo
+    const displayDays = freqType === 'semanal' ? 'block' : 'none';
+    const displayInt = freqType === 'intervalo' ? 'block' : 'none';
+
+    // Parsear freqValue si viene guardado
+    let checks = [false,false,false,false,false,false,false]; // D L M M J V S
+    if(freqType === 'semanal' && Array.isArray(freqValue)) {
+        freqValue.forEach(d => checks[d] = true);
+    }
+    const intervalVal = (freqType === 'intervalo') ? freqValue : 2;
+
+    fila.innerHTML = `
     <div class="row g-2 align-items-end">
-        <div class="col-4">
-            <label class="form-label small">Droga</label>
-            <input type="text" class="form-control in-medName" list="lista-meds-sugeridos" value="${n}">
+        <div class="col-md-4 col-12">
+            <label class="form-label small text-secondary">Droga</label>
+            <input type="text" class="form-control in-medName" list="lista-meds-sugeridos" value="${n}" placeholder="Nombre medicamento">
         </div>
-        <div class="col-3">
-            <label class="form-label small">Presentación</label>
-            <input type="text" class="form-control in-strength" value="${strength}">
+        <div class="col-md-3 col-6">
+            <label class="form-label small text-secondary">Presentación</label>
+            <input type="text" class="form-control in-strength" value="${strength}" placeholder="Ej: 500mg">
         </div>
-        <div class="col-3">
-            <label class="form-label small">Dosis (mg/comp.)</label>
+        <div class="col-md-3 col-6">
+            <label class="form-label small text-secondary">Dosis (mg/comp.)</label>
             <input type="number" step="any" class="form-control in-dosisComp" value="${dosisComp}">
         </div>
-        <div class="col-2">
-            <label class="form-label small">Mañana</label>
-            <input type="number" step="0.01" class="form-control in-mTabs" value="${mTabs}" placeholder="0">
-        </div>
-        <div class="col-2">
-            <label class="form-label small">Tarde</label>
-            <input type="number" step="0.01" class="form-control in-aTabs" value="${aTabs}" placeholder="0">
-        </div>
-        <div class="col-2">
-            <label class="form-label small">Noche</label>
-            <input type="number" step="0.01" class="form-control in-nTabs" value="${nTabs}" placeholder="0">
-        </div>
-        <div class="col-2">
-            <div class="form-check mt-4">
-                <input class="form-check-input in-temp" type="checkbox" ${isTemp ? 'checked' : ''} id="temp-${idx}">
-                <label class="form-check-label small" for="temp-${idx}">Temporaria</label>
-            </div>
-        </div>
-        <div class="col-12 text-end">
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarFila(this)">Quitar</button>
+        <div class="col-md-2 col-12 text-end">
+             <button type="button" class="btn btn-sm btn-outline-danger mt-4" onclick="eliminarFila(this)">🗑</button>
         </div>
     </div>
-`;
+    
+    <div class="row g-2 mt-1 align-items-center">
+        <div class="col-3 col-md-2">
+            <label class="form-label small text-center w-100">Mañana</label>
+            <input type="number" step="0.01" class="form-control text-center in-mTabs" value="${mTabs}" placeholder="0">
+        </div>
+        <div class="col-3 col-md-2">
+            <label class="form-label small text-center w-100">Tarde</label>
+            <input type="number" step="0.01" class="form-control text-center in-aTabs" value="${aTabs}" placeholder="0">
+        </div>
+        <div class="col-3 col-md-2">
+            <label class="form-label small text-center w-100">Noche</label>
+            <input type="number" step="0.01" class="form-control text-center in-nTabs" value="${nTabs}" placeholder="0">
+        </div>
+        <div class="col-3 col-md-6 d-flex align-items-center justify-content-end gap-2 mt-4">
+             <div class="form-check">
+                <input class="form-check-input in-temp" type="checkbox" ${isTemp ? 'checked' : ''} id="temp-${idx}">
+                <label class="form-check-label small" for="temp-${idx}">Temp</label>
+            </div>
+            <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#config-${idx}">
+                ⚙️ Frecuencia
+            </button>
+        </div>
+    </div>
+
+    <div class="collapse ${freqType !== 'diario' ? 'show' : ''} mt-2" id="config-${idx}">
+        <div class="freq-controls">
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <label class="small text-muted">Tipo de Frecuencia</label>
+                    <select class="form-select form-select-sm in-freqType" onchange="toggleFreqOptions(this)">
+                        <option value="diario" ${freqType === 'diario' ? 'selected' : ''}>Diario (Todos los días)</option>
+                        <option value="semanal" ${freqType === 'semanal' ? 'selected' : ''}>Días de la semana</option>
+                        <option value="intervalo" ${freqType === 'intervalo' ? 'selected' : ''}>Intervalo (Día por medio, etc)</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-8 freq-opt-semanal" style="display: ${displayDays}">
+                    <label class="small text-muted d-block">Seleccionar días:</label>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <input type="checkbox" class="btn-check day-chk" value="1" id="d1-${idx}" ${checks[1]?'checked':''}> <label class="btn btn-outline-secondary" for="d1-${idx}">Lu</label>
+                        <input type="checkbox" class="btn-check day-chk" value="2" id="d2-${idx}" ${checks[2]?'checked':''}> <label class="btn btn-outline-secondary" for="d2-${idx}">Ma</label>
+                        <input type="checkbox" class="btn-check day-chk" value="3" id="d3-${idx}" ${checks[3]?'checked':''}> <label class="btn btn-outline-secondary" for="d3-${idx}">Mi</label>
+                        <input type="checkbox" class="btn-check day-chk" value="4" id="d4-${idx}" ${checks[4]?'checked':''}> <label class="btn btn-outline-secondary" for="d4-${idx}">Ju</label>
+                        <input type="checkbox" class="btn-check day-chk" value="5" id="d5-${idx}" ${checks[5]?'checked':''}> <label class="btn btn-outline-secondary" for="d5-${idx}">Vi</label>
+                        <input type="checkbox" class="btn-check day-chk" value="6" id="d6-${idx}" ${checks[6]?'checked':''}> <label class="btn btn-outline-secondary" for="d6-${idx}">Sa</label>
+                        <input type="checkbox" class="btn-check day-chk" value="0" id="d0-${idx}" ${checks[0]?'checked':''}> <label class="btn btn-outline-secondary" for="d0-${idx}">Do</label>
+                    </div>
+                </div>
+
+                <div class="col-md-8 freq-opt-intervalo" style="display: ${displayInt}">
+                    <div class="d-flex gap-2 align-items-end">
+                        <div class="flex-grow-1">
+                            <label class="small text-muted">Cada cuantos días:</label>
+                            <input type="number" min="2" class="form-control form-control-sm in-intervalVal" value="${intervalVal}" placeholder="Ej: 2 (Día por medio)">
+                        </div>
+                        <div class="flex-grow-1">
+                            <label class="small text-muted">Fecha inicio ref:</label>
+                            <input type="date" class="form-control form-control-sm in-startDate" value="${lastTaken ? lastTaken.split('T')[0] : new Date().toISOString().split('T')[0]}">
+                        </div>
+                    </div>
+                    <div class="small text-warning mt-1" style="font-size: 0.7rem;">* "2" significa toma un día sí, un día no.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
     cont.appendChild(fila);
+}
+
+// Helper para mostrar/ocultar opciones en el modal
+function toggleFreqOptions(select) {
+    const parent = select.closest('.freq-controls');
+    const val = select.value;
+    parent.querySelector('.freq-opt-semanal').style.display = (val === 'semanal') ? 'block' : 'none';
+    parent.querySelector('.freq-opt-intervalo').style.display = (val === 'intervalo') ? 'block' : 'none';
 }
 function eliminarFila(btn) {
     const fila = btn.closest('.border');
@@ -1288,30 +1387,42 @@ async function guardarPaciente() {
         const pres = [];
         const medsNuevos = [];
 
-        document.querySelectorAll('#lista-prescripciones > div').forEach(div => {
+document.querySelectorAll('#lista-prescripciones > .border').forEach(div => {
             const medName = div.querySelector('.in-medName').value.trim();
-            const strength = div.querySelector('.in-strength').value.trim(); // "2mg"
+            const strength = div.querySelector('.in-strength').value.trim();
             const dosisComp = parseDecimal(div.querySelector('.in-dosisComp').value);
             const mTabs = parseDecimal(div.querySelector('.in-mTabs').value);
             const aTabs = parseDecimal(div.querySelector('.in-aTabs').value);
             const nTabs = parseDecimal(div.querySelector('.in-nTabs').value);
             const isTemp = div.querySelector('.in-temp').checked;
 
+            // --- NUEVO: CAPTURA DE FRECUENCIA ---
+            const freqType = div.querySelector('.in-freqType').value;
+            let freqValue = null;
+            let startDate = null;
+
+            if (freqType === 'semanal') {
+                freqValue = [];
+                div.querySelectorAll('.day-chk:checked').forEach(chk => {
+                    freqValue.push(parseInt(chk.value));
+                });
+            } else if (freqType === 'intervalo') {
+                freqValue = parseInt(div.querySelector('.in-intervalVal').value) || 2;
+                startDate = div.querySelector('.in-startDate').value; // Guardamos fecha referencia
+            }
+            // -------------------------------------
+
             if (!medName) return;
 
-            // REDONDEO CRÍTICO AQUÍ: Asegura que 0.25 + 0.75 sea 1 exacto al guardar
             const totalTabsDia = Math.round((mTabs + aTabs + nTabs) * 100) / 100;
             const dailyDosageMg = dosisComp * totalTabsDia;
 
             pres.push({
-                medName: medName,
-                strength: strength, // Guardamos la presentación (ej: 2mg)
-                dosisPorComprimidoMg: dosisComp,
-                dailyDosageMg: dailyDosageMg,
-                morningTabs: mTabs,
-                afternoonTabs: aTabs,
-                nightTabs: nTabs,
-                isTemporary: isTemp
+                medName, strength, dosisPorComprimidoMg: dosisComp,
+                dailyDosageMg, morningTabs: mTabs, afternoonTabs: aTabs, nightTabs: nTabs,
+                isTemporary: isTemp,
+                // Guardamos nuevos campos
+                freqType, freqValue, startDate
             });
 
             medsNuevos.push({ name: medName, strength: strength });
@@ -1432,7 +1543,7 @@ function verDetallePaciente(id) {
         cont.innerHTML = '<p class="small text-muted">Sin prescripciones.</p>';
     } else {
         cont.innerHTML = `
-            <div class="table-responsive rounded-4 overflow-hidden">
+            <div class="table-responsive rounded-4">
                 <table class="table table-dark table-sm table-bordered mb-0">
                     <thead>
                         <tr>
@@ -1679,123 +1790,84 @@ async function aplicarFechaSimulada() {
     }
 }
 //iniciar onload
-// --- INICIO PARCHE DE TIEMPO DEFINITIVO ---
-function sincronizarStockConTiempo() {
-    // 1. Definimos HOY usando hora local (Argentina), no UTC para evitar errores de zona horaria
-    const ahora = new Date();
-    // Truco para obtener YYYY-MM-DD en hora local
-    const hoyLocal = new Date(ahora.getTime() - (ahora.getTimezoneOffset() * 60000))
-                        .toISOString().split('T')[0];
+function procesarDescuentoPorTiempo() {
+    const hoy = new Date();
+    const hoyStr = hoy.toISOString().split('T')[0];
+    const ultimaCarga = localStorage.getItem('ultima_conexion_stock');
 
-    const CLAVE_DB_MEDS = 'local_meds';
-    const CLAVE_DB_PATS = 'local_pats';
-    const CLAVE_FECHA = 'ultima_actualizacion_stock';
+    // Si ya se procesó hoy, no hacer nada
+    if (ultimaCarga === hoyStr) return;
 
-    let fechaGuardada = localStorage.getItem(CLAVE_FECHA);
-
-    // Si ya se actualizó hoy, no hacemos nada
-    if (fechaGuardada === hoyLocal) return;
-
-    console.log("Detectando cambio de día...");
-
-    // Cargar datos manualmente porque 'iniciar()' aún no corrió
-    let inventario = JSON.parse(localStorage.getItem(CLAVE_DB_MEDS)) || [];
-    let pacientes = JSON.parse(localStorage.getItem(CLAVE_DB_PATS)) || [];
-
-    // Si no hay fecha guardada, asumimos que es la primera vez y guardamos hoy
-    if (!fechaGuardada) {
-        localStorage.setItem(CLAVE_FECHA, hoyLocal);
+    let meds = JSON.parse(localStorage.getItem('local_meds')) || [];
+    let pats = JSON.parse(localStorage.getItem('local_pats')) || [];
+    
+    if (meds.length === 0 || !ultimaCarga) {
+        localStorage.setItem('ultima_conexion_stock', hoyStr);
         return;
     }
 
-    // Calcular días pasados
-    const dUltima = new Date(fechaGuardada + 'T00:00:00');
-    const dHoy = new Date(hoyLocal + 'T00:00:00');
-    const diff = dHoy - dUltima;
-    const diasPasados = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const fechaAnterior = new Date(ultimaCarga);
+    const diffTiempo = hoy - fechaAnterior;
+    const diasPasados = Math.floor(diffTiempo / (1000 * 60 * 60 * 24));
 
     if (diasPasados > 0) {
-        console.log(`Pasaron ${diasPasados} días. Descontando stock...`);
         let huboCambios = false;
 
-        inventario = inventario.map(med => {
-            // LÓGICA DE CÁLCULO COPIADA DE TU SISTEMA (Adaptada)
-            // Calculamos cuánto consumen los pacientes de este medicamento
-            const medNombreS = (med.name || '').trim().toLowerCase();
-            const medFuerzaS = String(med.strength || '').trim().toLowerCase();
-            
+        meds = meds.map(m => {
+            // Calcular consumo diario igual que lo hace tu app
             let consumoDiario = 0;
-
-            // Prioridad: Consumo manual si existe
-            if (med.manualConsumption) {
-                consumoDiario = parseFloat(med.manualConsumption);
+            if (m.manualConsumption) {
+                consumoDiario = parseFloat(m.manualConsumption);
             } else {
-                // Cálculo automático basado en pacientes
-                consumoDiario = pacientes.reduce((acc, p) => {
-                    const sumaPaciente = (p.prescriptions || []).reduce((subAcc, pr) => {
-                        if (pr.isTemporary) return subAcc;
-                        const medNombreP = (pr.medName || '').trim().toLowerCase();
-                        const medFuerzaP = String(pr.strength || '').trim().toLowerCase();
-                        
-                        if (medNombreP === medNombreS && medFuerzaP === medFuerzaS) {
-                            // Sumamos mañana + tarde + noche
-                            return subAcc + (parseFloat(pr.morningTabs)||0) + (parseFloat(pr.afternoonTabs)||0) + (parseFloat(pr.nightTabs)||0);
+                pats.forEach(p => {
+                    (p.prescriptions || []).forEach(pr => {
+                        if (pr.medName === m.name && pr.strength === m.strength && !pr.isTemporary) {
+                            consumoDiario += (parseFloat(pr.morningTabs) || 0) + 
+                                             (parseFloat(pr.afternoonTabs) || 0) + 
+                                             (parseFloat(pr.nightTabs) || 0);
                         }
-                        return subAcc;
-                    }, 0);
-                    return acc + sumaPaciente;
-                }, 0);
-            }
-
-            // Aplicar descuento si hay consumo
-            if (consumoDiario > 0) {
-                const aDescontar = consumoDiario * diasPasados;
-                const stockActual = parseFloat(med.stock) || 0;
-                const nuevoStock = Math.max(0, stockActual - aDescontar);
-
-                if (nuevoStock !== stockActual) {
-                    med.stock = nuevoStock;
-                    // Agregamos al historial
-                    med.stockHistory = med.stockHistory || [];
-                    med.stockHistory.push({
-                        date: new Date().toISOString(),
-                        change: (nuevoStock - stockActual),
-                        newStock: nuevoStock,
-                        type: 'auto-day-fix'
                     });
-                    huboCambios = true;
-                }
+                });
             }
-            return med;
+
+            if (consumoDiario > 0) {
+                const totalADescontar = consumoDiario * diasPasados;
+                m.stock = Math.max(0, (parseFloat(m.stock) || 0) - totalADescontar);
+                huboCambios = true;
+                
+                // Registrar en historial para que veas que funcionó
+                if(!m.stockHistory) m.stockHistory = [];
+                m.stockHistory.push({
+                    date: new Date().toISOString(),
+                    change: -totalADescontar,
+                    newStock: m.stock,
+                    type: 'auto-descuento-diario'
+                });
+            }
+            return m;
         });
 
         if (huboCambios) {
-            localStorage.setItem(CLAVE_DB_MEDS, JSON.stringify(inventario));
-            console.log("Stock actualizado correctamente por paso del tiempo.");
+            localStorage.setItem('local_meds', JSON.stringify(meds));
         }
-        
-        // Actualizamos la fecha para que no vuelva a descontar hoy
-        localStorage.setItem(CLAVE_FECHA, hoyLocal);
     }
+    
+    localStorage.setItem('ultima_conexion_stock', hoyStr);
 }
 
-// Reemplazo del Listener original
+// REEMPLAZO DE TU LISTENER ORIGINAL
 window.addEventListener('load', () => {
-    // 1. Ejecutar el parche ANTES de iniciar la app
-    try {
-        sincronizarStockConTiempo();
-    } catch (e) {
-        console.error("Error en sincronización de tiempo:", e);
-    }
+    // 1. Ejecutar el descuento automático antes que nada
+    procesarDescuentoPorTiempo();
 
-    // 2. Lógica de inicio normal
+    // 2. Tu lógica original de login
     if (localStorage.getItem('auth_stock_ba') === 'true' || 
         sessionStorage.getItem('auth_stock_ba') === 'true') {
         document.getElementById('login-overlay').style.display = 'none';
         iniciar();
     }
 });
-// --- FIN PARCHE ---
+
 
         let contadorClicsTest = 0;
 const areaSecreta = document.getElementById('area-clic-secreta');
@@ -1814,13 +1886,13 @@ if (areaSecreta) {
     });
 }
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js')
-    .catch(err => console.log("Error al registrar SW", err));
-}
+// if ('serviceWorker' in navigator) {
+//   navigator.serviceWorker.register('./sw.js')
+//     .catch(err => console.log("Error al registrar SW", err));
+// }
 
 </script>
-<div class="modal fade" id="modalAyuda" tabindex="-1" aria-hidden="true">
+<!-- <div class="modal fade" id="modalAyuda" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content bg-dark text-light border-secondary">
       <div class="modal-header border-secondary">
@@ -1914,9 +1986,9 @@ if ('serviceWorker' in navigator) {
       </div>
     </div>
   </div>
-</div>
+</div> -->
 
-<script>
+<!-- <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       // Registramos un Service Worker vacío para eliminar errores de consola
@@ -1926,7 +1998,7 @@ if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register(swUrl).catch(err => console.log('SW error omitido'));
     });
   }
-</script>
+</script> -->
 
 </body>
 </html>
