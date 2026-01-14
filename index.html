@@ -1871,10 +1871,9 @@ window.addEventListener('load', () => {
 
 
 
-// if ('serviceWorker' in navigator) {
-//   navigator.serviceWorker.register('./sw.js')
-//     .catch(err => console.log("Error al registrar SW", err));
-// }
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(err => console.log("Error al registrar SW", err));
+ }
 
 </script>
 <!-- <div class="modal fade" id="modalAyuda" tabindex="-1" aria-hidden="true">
@@ -1973,7 +1972,7 @@ window.addEventListener('load', () => {
   </div>
 </div> -->
 
-<!-- <script>
+<script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       // Registramos un Service Worker vacío para eliminar errores de consola
@@ -1983,7 +1982,7 @@ window.addEventListener('load', () => {
       navigator.serviceWorker.register(swUrl).catch(err => console.log('SW error omitido'));
     });
   }
-</script> -->
+</script>
 
 </body>
 </html>
