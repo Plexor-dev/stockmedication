@@ -343,7 +343,6 @@
     </button>
 </nav>
 
-<!-- MODAL ACCIONES STOCK -->
 <div class="modal fade" id="modalAccionesStock" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -377,8 +376,6 @@
     </div>
   </div>
 </div>
-
-<!-- MODAL PACIENTE -->
 <div class="modal fade" id="modalPaciente" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -408,7 +405,6 @@
     </div>
 </div>
 
-<!-- MODAL DETALLE PACIENTE -->
 <div class="modal fade" id="modalDetallePaciente" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -429,7 +425,6 @@
   </div>
 </div>
 
-<!-- MODAL HISTORIAL STOCK -->
 <div class="modal fade" id="modalHistorialStock" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -444,7 +439,6 @@
   </div>
 </div>
 
-<!-- MODAL CARRITO -->
 <div class="modal fade" id="modalCarrito" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -464,7 +458,6 @@
   </div>
 </div>
 
-<!-- MODAL NUEVO MEDICAMENTO -->
 <div class="modal fade" id="modalNuevoMed" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -551,15 +544,11 @@ let filtroPacientes = '';
 let pacienteArrastradoId = null;
 
 
-
-
 /* Utils */
 /* Utils: Corrección de decimales */
 function parseDecimal(value) {
     if (value === null || value === undefined || value === '') return 0;
     if (typeof value === 'number') return value;
-    // Elimina cualquier cosa que no sea número, punto o coma, 
-    // luego cambia coma por punto y limpia espacios.
     const s = String(value).replace(/[^0-9.,]/g, '').replace(',', '.').trim();
     const n = parseFloat(s);
     return Number.isNaN(n) ? 0 : n;
@@ -573,7 +562,6 @@ function getInitials(name) {
     return first + last;
 }
 function getAvatarColor(name) {
-    // array limpio, sin caracteres extraños
     const colors = ['#ef4444','#f97316','#eab308','#22c55e','#0ea5e9','#6366f1','#a855f7','#ec4899'];
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
@@ -615,56 +603,94 @@ function persistirLocal() {
     localStorage.setItem('local_pats', JSON.stringify(listadoPats));
 }
 
-/* Descuento automático diario al abrir la app */
+/* ---------------------------------------------------- */
+/* CORRECCION PRINCIPAL: DESCUENTO AUTOMATICO SINCRONIZADO */
+/* ---------------------------------------------------- */
 const DAILY_KEY = 'ultima_actualizacion_stock';
+
 async function aplicarDescuentoDiario() {
     const hoy = new Date();
-    const hoyYmd = hoy.toISOString().substring(0,10);
+    // Usamos string local (YYYY-MM-DD) para consistencia
+    const hoyYmd = hoy.toLocaleDateString('en-CA'); 
     const ultima = localStorage.getItem(DAILY_KEY);
 
+    // Si ya se procesó el día de hoy, salimos
     if (ultima === hoyYmd) return;
 
     let diasPasados = 1;
     if (ultima) {
         const dUltima = new Date(ultima + 'T00:00:00');
-        const diffMs = hoy.getTime() - dUltima.getTime();
-        diasPasados = Math.max(1, Math.floor(diffMs / (1000*60*60*24)));
+        // Calculamos diferencia en días (ignorando horas)
+        const diffMs = hoy.setHours(0,0,0,0) - dUltima.setHours(0,0,0,0);
+        diasPasados = Math.floor(diffMs / (1000*60*60*24));
     }
 
-    listadoMeds.forEach(m => {
+    // Si es fecha futura o mismo día, solo actualizamos marca temporal
+    if (diasPasados <= 0) {
+        localStorage.setItem(DAILY_KEY, hoyYmd);
+        return;
+    }
+
+    console.log(`Aplicando descuento por paso de ${diasPasados} días...`);
+    let huboCambios = false;
+
+    // Usamos for...of para permitir await dentro del bucle
+    for (const m of listadoMeds) {
         const consumo = calcularConsumoCompPorMed(m);
-        if (consumo <= 0) return;
+        if (consumo <= 0) continue;
+
         const stockActual = parseDecimal(m.stock);
-        if (stockActual <= 0) return;
+        if (stockActual <= 0) continue;
+
         const descuento = consumo * diasPasados;
         const nuevoStock = Math.max(0, stockActual - descuento);
         const cambio = nuevoStock - stockActual;
-        if (cambio === 0) return;
 
-        m.stock = nuevoStock;
-        m.stockHistory = m.stockHistory || [];
-        m.stockHistory.push({
-            date: new Date().toISOString(),
-            change: cambio,
-            newStock: nuevoStock,
-            type: 'auto-day'
-        });
-    });
+        // Si el stock cambió, registramos y guardamos
+        if (cambio !== 0) {
+            m.stock = nuevoStock;
+            m.stockHistory = m.stockHistory || [];
+            m.stockHistory.push({
+                date: new Date().toISOString(),
+                change: cambio,
+                newStock: nuevoStock,
+                type: 'auto-day'
+            });
+            huboCambios = true;
+
+            // --- Sincronización inmediata con API ---
+            // Esto evita que al recargar se pierda el descuento
+            if (!modoOffline) {
+                try {
+                    await fetch(URL_BASE + '/' + RES_MEDS + '/' + m.id, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(m)
+                    });
+                } catch (e) {
+                    console.error("Error guardando descuento en API para: " + m.name, e);
+                }
+            }
+        }
+    }
+
+    if (huboCambios) {
+        persistirLocal();
+        console.log("Stock actualizado correctamente.");
+    }
 
     localStorage.setItem(DAILY_KEY, hoyYmd);
-    persistirLocal();
 }
-
-/* Carga inicial optimizada */
+/* Carga inicial optimizada y corregida */
 async function iniciar() {
     usarCargaLocal();
     inicializarModalAccionesStock();
     inicializarBuscadorPacientes();
 
-    await aplicarDescuentoDiario();
+    // Renderizamos primero lo local para velocidad visual
     renderizar();
-    actualizarDatalistMeds();
 
+    // Intentamos obtener datos de la API
     try {
         const [rM, rP] = await Promise.all([
             fetch(URL_BASE + '/' + RES_MEDS),
@@ -673,22 +699,27 @@ async function iniciar() {
         if (rM.ok && rP.ok) {
             const medsApi = await rM.json();
             const patsApi = await rP.json();
+            
+            // Actualizamos memoria con datos de la nube
             listadoMeds = medsApi;
             listadoPats = patsApi;
             modoOffline = false;
 
-            await aplicarDescuentoDiario();
-
             document.getElementById('status-indicator').innerText = "Modo Online (API)";
-            persistirLocal();
-            renderizar();
-            actualizarDatalistMeds();
         } else {
             document.getElementById('status-indicator').innerText = "Modo Local (Error API)";
         }
     } catch (e) {
         document.getElementById('status-indicator').innerText = "Modo Local (Sin conexión)";
     }
+
+    // --- PUNTO CLAVE: Aplicamos descuento DESPUÉS de tener los datos (locales o API) ---
+    await aplicarDescuentoDiario();
+
+    // Guardamos estado final y re-renderizamos
+    persistirLocal();
+    renderizar();
+    actualizarDatalistMeds();
 }
 
 function renderizar() {
@@ -834,7 +865,6 @@ function renderPacientesPlanilla() {
 }
 
 /* Stock */
-/* Reemplaza la función completa con este bloque */
 function calcularConsumoCompPorMed(m) {
     if (!m) return 0;
 
@@ -910,11 +940,11 @@ function inicializarModalAccionesStock() {
     const btnAgregar = document.getElementById('btn-accion-agregar');
     const btnDescontar = document.getElementById('btn-accion-descontar');
     const btnHistorial = document.getElementById('btn-accion-historial');
-    const btnBorrar = document.getElementById('btn-accion-borrar-med'); // <--- NUEVO
+    const btnBorrar = document.getElementById('btn-accion-borrar-med');
 
     // Agregamos el efecto touch a todos
     [btnEditar, btnAgregar, btnDescontar, btnHistorial, btnBorrar].forEach(btn => {
-        if(btn) { // Verificamos que exista para no romper nada
+        if(btn) {
             btn.addEventListener('touchstart', () => btn.classList.add('is-active-touch'), {passive:true});
             btn.addEventListener('touchend', () => btn.classList.remove('is-active-touch'));
             btn.addEventListener('touchcancel', () => btn.classList.remove('is-active-touch'));
@@ -946,7 +976,6 @@ function inicializarModalAccionesStock() {
         if (id) verHistorialStock(id);
     });
     
-    // --- NUEVO LISTENER ---
     if(btnBorrar) {
         btnBorrar.addEventListener('click', function() {
             const id = medAccionesActualId;
@@ -964,6 +993,7 @@ function abrirAccionesStock(id) {
     const modal = new bootstrap.Modal(document.getElementById('modalAccionesStock'));
     modal.show();
 }
+
 async function editStock(id) {
     const med = listadoMeds.find(x => x.id == id);
     if (!med) return;
@@ -976,7 +1006,7 @@ async function editStock(id) {
     const nuevaStrength = prompt('Editar presentación (ej: 2mg):', med.strength);
     if (nuevaStrength === null) return;
 
-    // 3. Pedir Stock (manteniendo tu lógica original)
+    // 3. Pedir Stock
     const actualStock = parseDecimal(med.stock);
     const valStock = prompt('Nuevo stock total (comprimidos):', actualStock);
     if (valStock === null) return;
@@ -985,14 +1015,12 @@ async function editStock(id) {
     if (Number.isNaN(nuevoStock) || nuevoStock < 0) return;
 
     const valConsumo = prompt('Consumo diario (deja vacío para auto-calcular desde pacientes):', med.manualConsumption || '');
-if (valConsumo !== null) {
-    med.manualConsumption = valConsumo === '' ? null : parseDecimal(valConsumo);
-}
+    if (valConsumo !== null) {
+        med.manualConsumption = valConsumo === '' ? null : parseDecimal(valConsumo);
+    }
 
-    // Calculamos el cambio para el historial
     const cambio = nuevoStock - actualStock;
 
-    // Actualizamos el objeto con TODO lo nuevo
     med.name = nuevoNombre.trim();
     med.strength = nuevaStrength.trim();
     med.stock = nuevoStock;
@@ -1002,10 +1030,9 @@ if (valConsumo !== null) {
         date: new Date().toISOString(),
         change: cambio,
         newStock: nuevoStock,
-        type: 'edit_total' // Cambiamos el tipo para saber que fue una edición completa
+        type: 'edit_total' 
     });
 
-    // Guardar en API (Enviamos todo el objeto actualizado para que se guarde nombre y strength)
     if (!modoOffline) {
         try {
             await fetch(URL_BASE + '/' + RES_MEDS + '/' + id, {
@@ -1020,8 +1047,8 @@ if (valConsumo !== null) {
 
     persistirLocal();
     renderStock();
-    renderPacientesPlanilla(); // IMPORTANTE: Refresca la tabla de pacientes para vincular los nombres nuevos
-    actualizarDatalistMeds();   // Actualiza las sugerencias del buscador
+    renderPacientesPlanilla();
+    actualizarDatalistMeds();
 }
 async function addStock(id) {
     const med = listadoMeds.find(x => x.id == id);
@@ -1050,6 +1077,7 @@ async function addStock(id) {
     persistirLocal();
     renderStock();
 }
+
 async function subStock(id) {
     const med = listadoMeds.find(x => x.id == id);
     if (!med) return;
@@ -1078,6 +1106,7 @@ async function subStock(id) {
     persistirLocal();
     renderStock();
 }
+
 function verHistorialStock(id) {
     const med = listadoMeds.find(x => x.id == id);
     if (!med) return;
@@ -1120,20 +1149,16 @@ function verHistorialStock(id) {
     new bootstrap.Modal('#modalHistorialStock').show();
 }
 
-/* --- NUEVA FUNCION PARA BORRAR MEDICAMENTO --- */
 async function eliminarMedStock(id) {
     const med = listadoMeds.find(m => m.id == id);
     if (!med) return;
 
-    // Confirmación de seguridad
     if (!confirm('ATENCIÓN: ¿Estás seguro de ELIMINAR "' + med.name + '" del inventario?\n\nEsta acción no se puede deshacer y perderás el historial de este medicamento.')) {
         return;
     }
 
-    // 1. Eliminar de la lista local
     listadoMeds = listadoMeds.filter(m => m.id != id);
 
-    // 2. Eliminar de la API (si hay internet)
     if (!modoOffline) {
         try {
             await fetch(URL_BASE + '/' + RES_MEDS + '/' + id, { method: 'DELETE' });
@@ -1143,10 +1168,9 @@ async function eliminarMedStock(id) {
         }
     }
 
-    // 3. Guardar y actualizar vista
     persistirLocal();
     renderStock();
-    actualizarDatalistMeds(); // Actualizamos las sugerencias del buscador
+    actualizarDatalistMeds(); 
 }
 
 /* Carrito */
@@ -1233,9 +1257,9 @@ function abrirEdicion(id) {
             pr.afternoonTabs || '',
             pr.nightTabs || '',
             !!pr.isTemporary,
-            pr.freqType || 'diario', // Nuevo
-            pr.freqValue,           // Nuevo
-            pr.startDate            // Nuevo (usamos startDate como lastTaken ref)
+            pr.freqType || 'diario', 
+            pr.freqValue,           
+            pr.startDate            
         );
     });
     if (!(p.prescriptions || []).length) nuevaFila();
@@ -1245,19 +1269,17 @@ function abrirEdicion(id) {
 function nuevaFila(
     n = '', dosisComp = '', strength = '',
     mTabs = '', aTabs = '', nTabs = '', isTemp = false,
-    freqType = 'diario', freqValue = '', lastTaken = '' // Nuevos parámetros
+    freqType = 'diario', freqValue = '', lastTaken = '' 
 ) {
     const cont = document.getElementById('lista-prescripciones');
-    const idx = Date.now() + Math.random().toString(16).slice(2); // ID único para colapsables
+    const idx = Date.now() + Math.random().toString(16).slice(2);
     const fila = document.createElement('div');
     fila.className = 'border rounded-3 p-2 mb-2 position-relative';
     
-    // Lógica para mostrar/ocultar inputs según tipo
     const displayDays = freqType === 'semanal' ? 'block' : 'none';
     const displayInt = freqType === 'intervalo' ? 'block' : 'none';
 
-    // Parsear freqValue si viene guardado
-    let checks = [false,false,false,false,false,false,false]; // D L M M J V S
+    let checks = [false,false,false,false,false,false,false]; 
     if(freqType === 'semanal' && Array.isArray(freqValue)) {
         freqValue.forEach(d => checks[d] = true);
     }
@@ -1352,7 +1374,6 @@ function nuevaFila(
     cont.appendChild(fila);
 }
 
-// Helper para mostrar/ocultar opciones en el modal
 function toggleFreqOptions(select) {
     const parent = select.closest('.freq-controls');
     const val = select.value;
@@ -1364,7 +1385,7 @@ function eliminarFila(btn) {
     if (fila && fila.parentNode) fila.parentNode.removeChild(fila);
 }
 
-/* Guardar paciente con spinner y dosis diaria correcta */
+/* Guardar paciente */
 async function guardarPaciente() {
     const btn = document.getElementById('btn-guardar-paciente');
     const textoOriginal = btn.innerHTML;
@@ -1387,7 +1408,7 @@ async function guardarPaciente() {
         const pres = [];
         const medsNuevos = [];
 
-document.querySelectorAll('#lista-prescripciones > .border').forEach(div => {
+        document.querySelectorAll('#lista-prescripciones > .border').forEach(div => {
             const medName = div.querySelector('.in-medName').value.trim();
             const strength = div.querySelector('.in-strength').value.trim();
             const dosisComp = parseDecimal(div.querySelector('.in-dosisComp').value);
@@ -1396,7 +1417,6 @@ document.querySelectorAll('#lista-prescripciones > .border').forEach(div => {
             const nTabs = parseDecimal(div.querySelector('.in-nTabs').value);
             const isTemp = div.querySelector('.in-temp').checked;
 
-            // --- NUEVO: CAPTURA DE FRECUENCIA ---
             const freqType = div.querySelector('.in-freqType').value;
             let freqValue = null;
             let startDate = null;
@@ -1408,9 +1428,8 @@ document.querySelectorAll('#lista-prescripciones > .border').forEach(div => {
                 });
             } else if (freqType === 'intervalo') {
                 freqValue = parseInt(div.querySelector('.in-intervalVal').value) || 2;
-                startDate = div.querySelector('.in-startDate').value; // Guardamos fecha referencia
+                startDate = div.querySelector('.in-startDate').value; 
             }
-            // -------------------------------------
 
             if (!medName) return;
 
@@ -1421,7 +1440,6 @@ document.querySelectorAll('#lista-prescripciones > .border').forEach(div => {
                 medName, strength, dosisPorComprimidoMg: dosisComp,
                 dailyDosageMg, morningTabs: mTabs, afternoonTabs: aTabs, nightTabs: nTabs,
                 isTemporary: isTemp,
-                // Guardamos nuevos campos
                 freqType, freqValue, startDate
             });
 
@@ -1481,7 +1499,6 @@ document.querySelectorAll('#lista-prescripciones > .border').forEach(div => {
     }
 }
 
-/* Crear meds en stock si no existen */
 async function asegurarMedsEnStock(lista) {
     for (const item of lista) {
         const name = item.name;
@@ -1516,7 +1533,6 @@ async function asegurarMedsEnStock(lista) {
     }
 }
 
-/* Eliminar / detalle paciente */
 async function eliminarP(id) {
     if (!confirm('¿Seguro que querés borrar este paciente?')) return;
     listadoPats = listadoPats.filter(p => p.id != id);
@@ -1583,7 +1599,7 @@ async function guardarNuevoMed() {
     const name = document.getElementById('med-nombre').value.trim();
     const strength = document.getElementById('med-strength').value.trim();
     const stock = parseDecimal(document.getElementById('med-stock').value);
-    const manualCons = document.getElementById('med-manual-consumption').value; // Nuevo
+    const manualCons = document.getElementById('med-manual-consumption').value;
 
     if (!name) {
         alert('El nombre es obligatorio');
@@ -1594,10 +1610,9 @@ async function guardarNuevoMed() {
         name,
         strength,
         stock: Number.isNaN(stock) ? 0 : stock,
-        manualConsumption: manualCons !== '' ? parseDecimal(manualCons) : null, // Nuevo
+        manualConsumption: manualCons !== '' ? parseDecimal(manualCons) : null,
         stockHistory: []
     };
-    // ... resto del código de la función (fetch, push, persistir) ...
 
     if (!modoOffline) {
         const resp = await fetch(URL_BASE + '/' + RES_MEDS, {
@@ -1620,7 +1635,6 @@ async function guardarNuevoMed() {
     if (modal) modal.hide();
 }
 
-/* Datalist sugerencias de meds */
 function actualizarDatalistMeds() {
     const dl = document.getElementById('lista-meds-sugeridos');
     if (!dl) return;
@@ -1633,72 +1647,6 @@ function actualizarDatalistMeds() {
         usados.add(label.toLowerCase());
         return '<option value="' + label + '"></option>';
     }).join('');
-}
-
-// Pega esto en la consola de F12 para debuguear
-listadoMeds.forEach(m => {
-   const consumo = calcularConsumoCompPorMed(m);
-   console.log(`Medicamento: ${m.name}, Consumo calculado: ${consumo}`);
-});
-
-// --- FUNCIÓN PARA DESCARGAR TODA LA DATA EN JSON ---
-function descargarDatosJSON() {
-    // Creamos un objeto que contenga todo: pacientes y stock
-    const dataAConservar = {
-        pacientes: listadoPats,
-        stock: listadoMeds,
-        fecha_exportacion: new Date().toISOString()
-    };
-
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataAConservar, null, 2));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "backup_stock_pacientes_" + obtenerFechaSimple() + ".json");
-    document.body.appendChild(downloadAnchorNode); // Requerido para Firefox
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-}
-
-// Función auxiliar para el nombre del archivo
-function obtenerFechaSimple() {
-    const d = new Date();
-    return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
-}
-
-// --- DESCARGAR PACIENTES EN CSV (PARA EXCEL) ---
-function descargarPacientesCSV() {
-    if (listadoPats.length === 0) {
-        alert("No hay pacientes para exportar.");
-        return;
-    }
-
-    // Cabeceras de las columnas
-    let csvContent = "Nombre,DNI,Alergias,Medicamentos (Resumen)\n";
-
-    listadoPats.forEach(p => {
-        // Creamos un resumen de sus medicamentos para que quepan en una sola celda
-        const resumenMeds = (p.prescriptions || [])
-            .map(pr => `${pr.medName} (${pr.strength})`)
-            .join(" - ");
-
-        // Limpiamos comas internas para no romper las columnas del CSV
-        const nombre = (p.name || "").replace(/,/g, "");
-        const dni = (p.dni || "").replace(/,/g, "");
-        const alergias = (p.allergies || "").replace(/,/g, "");
-
-        csvContent += `"${nombre}","${dni}","${alergias}","${resumenMeds}"\n`;
-    });
-
-    // El "BOM" (\uFEFF) sirve para que Excel reconozca tildes y eñes correctamente
-    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", "lista_pacientes_" + obtenerFechaSimple() + ".csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
 }
 
 // --- DESCARGAR BACKUP COMPLETO EN JSON ---
@@ -1716,20 +1664,46 @@ function descargarDatosJSON() {
     link.click();
 }
 
-// Función auxiliar para el nombre del archivo
+function descargarPacientesCSV() {
+    if (listadoPats.length === 0) {
+        alert("No hay pacientes para exportar.");
+        return;
+    }
+    let csvContent = "Nombre,DNI,Alergias,Medicamentos (Resumen)\n";
+    listadoPats.forEach(p => {
+        const resumenMeds = (p.prescriptions || [])
+            .map(pr => `${pr.medName} (${pr.strength})`)
+            .join(" - ");
+        const nombre = (p.name || "").replace(/,/g, "");
+        const dni = (p.dni || "").replace(/,/g, "");
+        const alergias = (p.allergies || "").replace(/,/g, "");
+        csvContent += `"${nombre}","${dni}","${alergias}","${resumenMeds}"\n`;
+    });
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "lista_pacientes_" + obtenerFechaSimple() + ".csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
 function obtenerFechaSimple() {
     const d = new Date();
-    return d.toISOString().split('T')[0]; // Devuelve YYYY-MM-DD
+    return d.toISOString().split('T')[0];
 }
 
 function mostrarAyuda() {
-    const modal = new bootstrap.Modal(document.getElementById('modalAyuda'));
-    modal.show();
+    // Si usas el modal comentado en tu HTML original, descoméntalo
+    // O crea uno dinámico aquí. Por ahora asumimos que existe o se habilita.
+    // Si no está en el HTML, esta función no hará nada.
+    const el = document.getElementById('modalAyuda');
+    if(el) new bootstrap.Modal(el).show();
+    else alert("La ayuda se encuentra en construcción.");
 }
 
-
 function abrirSimuladorTiempo() {
-    // Ponemos por defecto la fecha de mañana en el input
     const mañana = new Date();
     mañana.setDate(mañana.getDate() + 1);
     document.getElementById('simular-fecha-input').value = mañana.toISOString().substring(0,10);
@@ -1742,13 +1716,12 @@ async function aplicarFechaSimulada() {
 
     const ultima = localStorage.getItem(DAILY_KEY);
     if (!ultima) {
-        alert("Primero debe haber un registro de hoy. Recarga la página normalmente.");
+        alert("Primero debe haber un registro de hoy.");
         return;
     }
 
     const dUltima = new Date(ultima + 'T00:00:00');
     const dSimulada = new Date(nuevaFechaStr + 'T00:00:00');
-
     const diffMs = dSimulada.getTime() - dUltima.getTime();
     const diasPasados = Math.floor(diffMs / (1000*60*60*24));
 
@@ -1757,11 +1730,10 @@ async function aplicarFechaSimulada() {
         return;
     }
 
-    if (confirm(`¿Simular el paso de ${diasPasados} día(s)? Se descontará stock de todos los medicamentos.`)) {
-        // Ejecutamos la lógica de descuento
-        listadoMeds.forEach(m => {
+    if (confirm(`¿Simular el paso de ${diasPasados} día(s)?`)) {
+        for (const m of listadoMeds) {
             const consumo = calcularConsumoCompPorMed(m);
-            if (consumo <= 0) return;
+            if (consumo <= 0) continue;
             
             const stockActual = parseDecimal(m.stock);
             const descuento = consumo * diasPasados;
@@ -1775,182 +1747,50 @@ async function aplicarFechaSimulada() {
                     date: new Date().toISOString(),
                     change: cambio,
                     newStock: nuevoStock,
-                    type: 'auto-day'
+                    type: 'auto-day-sim'
                 });
+                // Guardar en API también si simulamos
+                if (!modoOffline) {
+                    await fetch(URL_BASE + '/' + RES_MEDS + '/' + m.id, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(m)
+                    });
+                }
             }
-        });
+        }
 
-        // Actualizamos la fecha de "última vez" a la fecha simulada
         localStorage.setItem(DAILY_KEY, nuevaFechaStr);
         persistirLocal();
         renderizar();
         
         bootstrap.Modal.getInstance(document.getElementById('modalSimulador')).hide();
-        alert("Simulación completada. Se descontó el consumo de " + diasPasados + " días.");
+        alert("Simulación completada.");
     }
 }
-//iniciar onload
-function procesarDescuentoPorTiempo() {
-    const hoy = new Date();
-    const hoyStr = hoy.toISOString().split('T')[0];
-    const ultimaCarga = localStorage.getItem('ultima_conexion_stock');
 
-    // Si ya se procesó hoy, no hacer nada
-    if (ultimaCarga === hoyStr) return;
+// ------------------------------------------------------------------
+// FINAL LIMPIO: Solo Listener de carga
+// ------------------------------------------------------------------
 
-    let meds = JSON.parse(localStorage.getItem('local_meds')) || [];
-    let pats = JSON.parse(localStorage.getItem('local_pats')) || [];
-    
-    if (meds.length === 0 || !ultimaCarga) {
-        localStorage.setItem('ultima_conexion_stock', hoyStr);
-        return;
-    }
-
-    const fechaAnterior = new Date(ultimaCarga);
-    const diffTiempo = hoy - fechaAnterior;
-    const diasPasados = Math.floor(diffTiempo / (1000 * 60 * 60 * 24));
-
-    if (diasPasados > 0) {
-        let huboCambios = false;
-
-        meds = meds.map(m => {
-            // Calcular consumo diario igual que lo hace tu app
-            let consumoDiario = 0;
-            if (m.manualConsumption) {
-                consumoDiario = parseFloat(m.manualConsumption);
-            } else {
-                pats.forEach(p => {
-                    (p.prescriptions || []).forEach(pr => {
-                        if (pr.medName === m.name && pr.strength === m.strength && !pr.isTemporary) {
-                            consumoDiario += (parseFloat(pr.morningTabs) || 0) + 
-                                             (parseFloat(pr.afternoonTabs) || 0) + 
-                                             (parseFloat(pr.nightTabs) || 0);
-                        }
-                    });
-                });
-            }
-
-            if (consumoDiario > 0) {
-                const totalADescontar = consumoDiario * diasPasados;
-                m.stock = Math.max(0, (parseFloat(m.stock) || 0) - totalADescontar);
-                huboCambios = true;
-                
-                // Registrar en historial para que veas que funcionó
-                if(!m.stockHistory) m.stockHistory = [];
-                m.stockHistory.push({
-                    date: new Date().toISOString(),
-                    change: -totalADescontar,
-                    newStock: m.stock,
-                    type: 'auto-descuento-diario'
-                });
-            }
-            return m;
-        });
-
-        if (huboCambios) {
-            localStorage.setItem('local_meds', JSON.stringify(meds));
-        }
-    }
-    
-    localStorage.setItem('ultima_conexion_stock', hoyStr);
-}
-
-// REEMPLAZO DE TU LISTENER ORIGINAL
 window.addEventListener('load', () => {
-    // 1. Ejecutar el descuento automático antes que nada
-    procesarDescuentoPorTiempo();
-
-    // 2. Tu lógica original de login
+    // Si ya estamos autenticados, iniciamos directamente
     if (localStorage.getItem('auth_stock_ba') === 'true' || 
         sessionStorage.getItem('auth_stock_ba') === 'true') {
         document.getElementById('login-overlay').style.display = 'none';
         iniciar();
     }
+    
+    // Service Worker dummy para evitar errores en consola
+    if ('serviceWorker' in navigator) {
+      const swCode = "self.addEventListener('fetch', function(event) {});";
+      const blob = new Blob([swCode], {type: 'text/javascript'});
+      const swUrl = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(swUrl).catch(err => console.log('SW error omitido'));
+    }
 });
 
-
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(err => console.log("Error al registrar SW", err));
- }
-
 </script>
-<!-- <div class="modal fade" id="modalAyuda" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content bg-dark text-light border-secondary">
-      <div class="modal-header border-secondary">
-        <h5 class="modal-title">❓ Guía de Uso y Control de Dosis</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <h6 class="text-warning mb-3">📋 Cómo completar las dosis (Mañana, Tarde, Noche)</h6>
-        <p>Para que el stock se descuente correctamente, utiliza <strong>puntos (.)</strong> para los decimales. Aquí tienes la equivalencia de comprimidos:</p>
-        
-        <div class="table-responsive">
-          <table class="table table-dark table-bordered text-center">
-            <thead>
-              <tr class="table-secondary text-dark">
-                <th>Fracción</th>
-                <th>Número a ingresar</th>
-                <th>Ejemplo</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>1/4 Comprimido</td>
-                <td><code class="fs-5 text-info">0.25</code></td>
-                <td>Dosis mínima o ajuste.</td>
-              </tr>
-              <tr>
-                <td>1/2 Comprimido</td>
-                <td><code class="fs-5 text-info">0.5</code></td>
-                <td>Media pastilla.</td>
-              </tr>
-              <tr>
-                <td>3/4 Comprimido</td>
-                <td><code class="fs-5 text-info">0.75</code></td>
-                <td>Media pastilla + un cuarto.</td>
-              </tr>
-              <tr>
-                <td>1 Comprimido</td>
-                <td><code class="fs-5 text-info">1</code></td>
-                <td>Pastilla completa.</td>
-              </tr>
-              <tr>
-                <td>1 y 1/2 Comp.</td>
-                <td><code class="fs-5 text-info">1.5</code></td>
-                <td>Pastilla y media.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <hr class="border-secondary">
-
-        <h6 class="text-warning mb-3">⚙️ ¿Cómo funciona la aplicación?</h6>
-        <ul class="list-group list-group-flush bg-dark">
-          <li class="list-group-item bg-dark text-light border-secondary">
-            <strong>1. Stock Físico:</strong> En la sección Inventario, carga la cantidad total de pastillas reales que tienes en la caja.
-          </li>
-          <li class="list-group-item bg-dark text-light border-secondary">
-            <strong>2. Pacientes:</strong> Al crear un paciente, asegúrate de que el nombre del medicamento coincida <u>exactamente</u> con el del Inventario.
-          </li>
-          <li class="list-group-item bg-dark text-light border-secondary">
-            <strong>3. Descuento Automático:</strong> El sistema suma las dosis diarias de todos los pacientes y las resta del stock automáticamente cada día que abres la app.
-          </li>
-          <li class="list-group-item bg-dark text-light border-secondary">
-            <strong>4. Alertas:</strong> 
-            <span class="badge bg-danger">Rojo</span>: Menos de 5 días de stock. <br>
-            <span class="badge bg-warning text-dark">Amarillo</span>: Menos de 10 días de stock.
-          </li>
-        </ul>
-      </div>
-      <div class="modal-footer border-secondary">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Entendido</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <div class="modal fade" id="modalSimulador" tabindex="-1">
   <div class="modal-dialog modal-sm">
@@ -1963,25 +1803,13 @@ if ('serviceWorker' in navigator) {
         <label class="small mb-2">Simular que hoy es:</label>
         <input type="date" id="simular-fecha-input" class="form-control mb-3">
         <p class="text-muted" style="font-size: 0.7rem;">
-            Al cambiar la fecha, el sistema detectará los días transcurridos desde la última vez y descontará el stock proporcionalmente.
+            Al cambiar la fecha, el sistema descontará el stock proporcionalmente.
         </p>
         <button class="btn btn-danger w-100" onclick="aplicarFechaSimulada()">Aplicar Salto Temporal</button>
       </div>
     </div>
   </div>
-</div> -->
-
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      // Registramos un Service Worker vacío para eliminar errores de consola
-      const swCode = "self.addEventListener('fetch', function(event) {});";
-      const blob = new Blob([swCode], {type: 'text/javascript'});
-      const swUrl = URL.createObjectURL(blob);
-      navigator.serviceWorker.register(swUrl).catch(err => console.log('SW error omitido'));
-    });
-  }
-</script>
+</div>
 
 </body>
 </html>
