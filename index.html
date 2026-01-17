@@ -1782,14 +1782,13 @@ window.addEventListener('load', () => {
     }
     
     // Service Worker dummy para evitar errores en consola
-    if ('serviceWorker' in navigator) {
-      const swCode = "self.addEventListener('fetch', function(event) {});";
-      const blob = new Blob([swCode], {type: 'text/javascript'});
-      const swUrl = URL.createObjectURL(blob);
-      navigator.serviceWorker.register(swUrl).catch(err => console.log('SW error omitido'));
-    }
-});
-
+/*        if ('serviceWorker' in navigator) {
+        const swCode = "self.addEventListener('fetch', function(event) {});";
+        const blob = new Blob([swCode], {type: 'text/javascript'});
+        const swUrl = URL.createObjectURL(blob);
+        navigator.serviceWorker.register(swUrl).catch(err => console.log('SW error omitido'));
+        }*/
+    });
 </script>
 
 <div class="modal fade" id="modalSimulador" tabindex="-1">
