@@ -610,32 +610,45 @@ const DAILY_KEY = 'ultima_actualizacion_stock';
 
 async function aplicarDescuentoDiario() {
     const hoy = new Date();
-    // Usamos string local (YYYY-MM-DD) para consistencia
-    const hoyYmd = hoy.toLocaleDateString('en-CA'); 
+    const hoyYmd = hoy.toLocaleDateString('en-CA'); // Fecha local YYYY-MM-DD
     const ultima = localStorage.getItem(DAILY_KEY);
 
-    // Si ya se procesó el día de hoy, salimos
+    // Si ya tenemos marca de que hoy se procesó en este navegador, salimos rápido.
     if (ultima === hoyYmd) return;
 
     let diasPasados = 1;
     if (ultima) {
         const dUltima = new Date(ultima + 'T00:00:00');
-        // Calculamos diferencia en días (ignorando horas)
         const diffMs = hoy.setHours(0,0,0,0) - dUltima.setHours(0,0,0,0);
         diasPasados = Math.floor(diffMs / (1000*60*60*24));
     }
 
-    // Si es fecha futura o mismo día, solo actualizamos marca temporal
+    // Si es fecha futura o mismo día según cálculo, solo actualizamos marca y salimos.
     if (diasPasados <= 0) {
         localStorage.setItem(DAILY_KEY, hoyYmd);
         return;
     }
 
-    console.log(`Aplicando descuento por paso de ${diasPasados} días...`);
+    console.log(`Verificando consumo por paso de ${diasPasados} días...`);
     let huboCambios = false;
 
-    // Usamos for...of para permitir await dentro del bucle
     for (const m of listadoMeds) {
+        
+        // --- CORRECCIÓN: Evitar doble descuento ---
+        // Verificamos si en el historial de ESTE medicamento ya existe
+        // un descuento automático ('auto-day') con la fecha de hoy.
+        const hoyISO = new Date().toISOString().split('T')[0]; // YYYY-MM-DD universal
+        
+        const yaDescontadoHoy = (m.stockHistory || []).some(h => 
+            h.type === 'auto-day' && h.date.startsWith(hoyISO)
+        );
+
+        if (yaDescontadoHoy) {
+            console.log(`Salteando ${m.name}: Ya fue descontado hoy.`);
+            continue; 
+        }
+        // ------------------------------------------
+
         const consumo = calcularConsumoCompPorMed(m);
         if (consumo <= 0) continue;
 
@@ -646,7 +659,6 @@ async function aplicarDescuentoDiario() {
         const nuevoStock = Math.max(0, stockActual - descuento);
         const cambio = nuevoStock - stockActual;
 
-        // Si el stock cambió, registramos y guardamos
         if (cambio !== 0) {
             m.stock = nuevoStock;
             m.stockHistory = m.stockHistory || [];
@@ -658,8 +670,6 @@ async function aplicarDescuentoDiario() {
             });
             huboCambios = true;
 
-            // --- Sincronización inmediata con API ---
-            // Esto evita que al recargar se pierda el descuento
             if (!modoOffline) {
                 try {
                     await fetch(URL_BASE + '/' + RES_MEDS + '/' + m.id, {
@@ -679,6 +689,7 @@ async function aplicarDescuentoDiario() {
         console.log("Stock actualizado correctamente.");
     }
 
+    // Actualizamos la marca local para que no intente verificar de nuevo hasta mañana
     localStorage.setItem(DAILY_KEY, hoyYmd);
 }
 /* Carga inicial optimizada y corregida */
