@@ -608,46 +608,60 @@ function persistirLocal() {
 /* ---------------------------------------------------- */
 const DAILY_KEY = 'ultima_actualizacion_stock';
 
+// Función auxiliar para obtener fecha YYYY-MM-DD en HORA LOCAL (importante para Argentina)
+function obtenerFechaLocalStr(dateObj) {
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 async function aplicarDescuentoDiario() {
     const hoy = new Date();
-    const hoyYmd = hoy.toLocaleDateString('en-CA'); // Fecha local YYYY-MM-DD
-    const ultima = localStorage.getItem(DAILY_KEY);
+    const hoyStr = obtenerFechaLocalStr(hoy); // Fecha exacta de TU compu (ej: "2023-10-27")
+    const ultimaGlobal = localStorage.getItem(DAILY_KEY);
 
-    // Si ya tenemos marca de que hoy se procesó en este navegador, salimos rápido.
-    if (ultima === hoyYmd) return;
-
+    // Cálculo de días pasados basado en la última vez que abriste la app
     let diasPasados = 1;
-    if (ultima) {
-        const dUltima = new Date(ultima + 'T00:00:00');
-        const diffMs = hoy.setHours(0,0,0,0) - dUltima.setHours(0,0,0,0);
-        diasPasados = Math.floor(diffMs / (1000*60*60*24));
+    if (ultimaGlobal) {
+        // Truco para evitar problemas de hora: sumamos 12hs para caer al mediodía y comparar fechas puras
+        const dHoy = new Date(hoyStr + 'T12:00:00'); 
+        const dUltima = new Date(ultimaGlobal + 'T12:00:00');
+        const diffMs = dHoy - dUltima;
+        diasPasados = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     }
 
-    // Si es fecha futura o mismo día según cálculo, solo actualizamos marca y salimos.
-    if (diasPasados <= 0) {
-        localStorage.setItem(DAILY_KEY, hoyYmd);
-        return;
+    // Si la fecha global es de hoy o futuro, no hacemos el cálculo global
+    // PERO seguimos iterando para verificar historial individual por seguridad
+    if (diasPasados <= 0 && ultimaGlobal === hoyStr) {
+        return; 
     }
+    
+    // Si diasPasados es 0 o negativo por error, forzamos 0 para no sumar stock
+    if (diasPasados < 0) diasPasados = 0;
 
-    console.log(`Verificando consumo por paso de ${diasPasados} días...`);
+    console.log(`Analizando descuento por paso de ${diasPasados} días (Fecha: ${hoyStr})...`);
     let huboCambios = false;
 
     for (const m of listadoMeds) {
+        // --- VALIDACIÓN ROBUSTA DE HISTORIAL ---
+        const historial = m.stockHistory || [];
         
-        // --- CORRECCIÓN: Evitar doble descuento ---
-        // Verificamos si en el historial de ESTE medicamento ya existe
-        // un descuento automático ('auto-day') con la fecha de hoy.
-        const hoyISO = new Date().toISOString().split('T')[0]; // YYYY-MM-DD universal
-        
-        const yaDescontadoHoy = (m.stockHistory || []).some(h => 
-            h.type === 'auto-day' && h.date.startsWith(hoyISO)
-        );
+        // Verificamos si la ÚLTIMA entrada del historial tiene fecha de HOY (local)
+        // Si ya hay un movimiento hoy (sea auto, manual o reposición), asumimos que el stock está "tocado" hoy y no descontamos.
+        if (historial.length > 0) {
+            const ultimoMov = historial[historial.length - 1];
+            const fechaUltimoMov = new Date(ultimoMov.date);
+            const fechaUltimoMovStr = obtenerFechaLocalStr(fechaUltimoMov);
 
-        if (yaDescontadoHoy) {
-            console.log(`Salteando ${m.name}: Ya fue descontado hoy.`);
-            continue; 
+            if (fechaUltimoMovStr === hoyStr) {
+                // Ya se tocó este medicamento hoy. NO TOCAR.
+                continue;
+            }
         }
-        // ------------------------------------------
+
+        // Si diasPasados es 0, y no se tocó hoy, no hay nada que restar (ej: abriste la app 2 veces el mismo dia pero no hubo cambios)
+        if (diasPasados === 0) continue;
 
         const consumo = calcularConsumoCompPorMed(m);
         if (consumo <= 0) continue;
@@ -655,6 +669,7 @@ async function aplicarDescuentoDiario() {
         const stockActual = parseDecimal(m.stock);
         if (stockActual <= 0) continue;
 
+        // Aplicar descuento
         const descuento = consumo * diasPasados;
         const nuevoStock = Math.max(0, stockActual - descuento);
         const cambio = nuevoStock - stockActual;
@@ -663,12 +678,13 @@ async function aplicarDescuentoDiario() {
             m.stock = nuevoStock;
             m.stockHistory = m.stockHistory || [];
             m.stockHistory.push({
-                date: new Date().toISOString(),
+                date: new Date().toISOString(), // Guardamos ISO completo para precisión
                 change: cambio,
                 newStock: nuevoStock,
                 type: 'auto-day'
             });
             huboCambios = true;
+            console.log(`Descontado ${m.name}: -${descuento} (Días: ${diasPasados})`);
 
             if (!modoOffline) {
                 try {
@@ -678,7 +694,7 @@ async function aplicarDescuentoDiario() {
                         body: JSON.stringify(m)
                     });
                 } catch (e) {
-                    console.error("Error guardando descuento en API para: " + m.name, e);
+                    console.error("Error sync API:", e);
                 }
             }
         }
@@ -686,11 +702,10 @@ async function aplicarDescuentoDiario() {
 
     if (huboCambios) {
         persistirLocal();
-        console.log("Stock actualizado correctamente.");
     }
-
-    // Actualizamos la marca local para que no intente verificar de nuevo hasta mañana
-    localStorage.setItem(DAILY_KEY, hoyYmd);
+    
+    // Actualizamos la marca global a hoy
+    localStorage.setItem(DAILY_KEY, hoyStr);
 }
 /* Carga inicial optimizada y corregida */
 async function iniciar() {
